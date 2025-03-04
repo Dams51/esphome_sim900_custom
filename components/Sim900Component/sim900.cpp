@@ -31,9 +31,9 @@ void Sim900Component::update() {
       ESP_LOGI(TAG, "Connecting...");
       this->send_cmd_("ATA");
       this->state_ = STATE_ATA_SENT;
-    } else if (this->registered_ && this->send_ussd_pending_) {
-      this->send_cmd_("AT+CSCS=\"GSM\"");
-      this->state_ = STATE_SEND_USSD1;
+    // } else if (this->registered_ && this->send_ussd_pending_) {
+    //   this->send_cmd_("AT+CSCS=\"GSM\"");
+    //   this->state_ = STATE_SEND_USSD1;
     } else if (this->registered_ && this->disconnect_pending_) {
       this->disconnect_pending_ = false;
       ESP_LOGI(TAG, "Disconnecting...");
@@ -80,7 +80,7 @@ void Sim900Component::parse_cmd_(std::string message) {
     } else if (message == "NO CARRIER") {
       if (this->call_state_ != 6) {
         this->call_state_ = 6;
-        this->call_disconnected_callback_.call();
+        // this->call_disconnected_callback_.call();
       }
     }
   }
@@ -117,7 +117,7 @@ void Sim900Component::parse_cmd_(std::string message) {
         } else if (message == "NO CARRIER") {
           if (this->call_state_ != 6) {
             this->call_state_ = 6;
-            this->call_disconnected_callback_.call();
+            // this->call_disconnected_callback_.call();
           }
         } else if (message.compare(0, 6, "+CUSD:") == 0) {
           // Incoming USSD MESSAGE
@@ -149,44 +149,44 @@ void Sim900Component::parse_cmd_(std::string message) {
       this->expect_ack_ = true;
       break;
     case STATE_SETUP_USSD:
-      send_cmd_("AT+CUSD=1");
-      this->state_ = STATE_CREG;
-      this->expect_ack_ = true;
+      // send_cmd_("AT+CUSD=1");
+      // this->state_ = STATE_CREG;
+      // this->expect_ack_ = true;
       break;
     case STATE_SEND_USSD1:
-      this->send_cmd_("AT+CUSD=1, \"" + this->ussd_ + "\"");
-      this->state_ = STATE_SEND_USSD2;
-      this->expect_ack_ = true;
+      // this->send_cmd_("AT+CUSD=1, \"" + this->ussd_ + "\"");
+      // this->state_ = STATE_SEND_USSD2;
+      // this->expect_ack_ = true;
       break;
     case STATE_SEND_USSD2:
-      ESP_LOGD(TAG, "SendUssd2: '%s'", message.c_str());
-      if (message == "OK") {
-        // Dialing
-        ESP_LOGD(TAG, "Dialing ussd code: '%s' done.", this->ussd_.c_str());
-        this->state_ = STATE_CHECK_USSD;
-        this->send_ussd_pending_ = false;
-      } else {
-        this->set_registered_(false);
-        this->state_ = STATE_INIT;
-        this->send_cmd_("AT+CMEE=2");
-        this->write(26);
-      }
+      // ESP_LOGD(TAG, "SendUssd2: '%s'", message.c_str());
+      // if (message == "OK") {
+      //   // Dialing
+      //   ESP_LOGD(TAG, "Dialing ussd code: '%s' done.", this->ussd_.c_str());
+      //   this->state_ = STATE_CHECK_USSD;
+      //   this->send_ussd_pending_ = false;
+      // } else {
+      //   this->set_registered_(false);
+      //   this->state_ = STATE_INIT;
+      //   this->send_cmd_("AT+CMEE=2");
+      //   this->write(26);
+      // }
       break;
     case STATE_CHECK_USSD:
-      ESP_LOGD(TAG, "Check ussd code: '%s'", message.c_str());
-      if (message.compare(0, 6, "+CUSD:") == 0) {
-        this->state_ = STATE_RECEIVED_USSD;
-        this->ussd_ = "";
-        size_t start = 10;
-        size_t end = message.find_last_of(',');
-        if (end > start) {
-          this->ussd_ = message.substr(start + 1, end - start - 2);
-          this->ussd_received_callback_.call(this->ussd_);
-        }
-      }
-      // Otherwise we receive another OK, we do nothing just wait polling to continuously check for SMS
-      if (message == "OK")
-        this->state_ = STATE_INIT;
+      // ESP_LOGD(TAG, "Check ussd code: '%s'", message.c_str());
+      // if (message.compare(0, 6, "+CUSD:") == 0) {
+      //   this->state_ = STATE_RECEIVED_USSD;
+      //   this->ussd_ = "";
+      //   size_t start = 10;
+      //   size_t end = message.find_last_of(',');
+      //   if (end > start) {
+      //     this->ussd_ = message.substr(start + 1, end - start - 2);
+      //     this->ussd_received_callback_.call(this->ussd_);
+      //   }
+      // }
+      // // Otherwise we receive another OK, we do nothing just wait polling to continuously check for SMS
+      // if (message == "OK")
+      //   this->state_ = STATE_INIT;
       break;
     case STATE_CREG:
       send_cmd_("AT+CREG?");
@@ -289,8 +289,8 @@ void Sim900Component::parse_cmd_(std::string message) {
             uint8_t current_call_state = parse_number<uint8_t>(message.substr(start, end - start)).value_or(6);
             if (current_call_state != this->call_state_) {
               ESP_LOGD(TAG, "Call state is now: %d", current_call_state);
-              if (current_call_state == 0)
-                this->call_connected_callback_.call();
+              // if (current_call_state == 0)
+              //   this->call_connected_callback_.call();
             }
             this->call_state_ = current_call_state;
             break;
@@ -309,7 +309,7 @@ void Sim900Component::parse_cmd_(std::string message) {
         if (this->call_state_ != 6) {
           // no call in progress
           this->call_state_ = 6;  // Disconnect
-          this->call_disconnected_callback_.call();
+          // this->call_disconnected_callback_.call();
         }
       }
       this->state_ = STATE_INIT;
@@ -321,7 +321,7 @@ void Sim900Component::parse_cmd_(std::string message) {
       if (ok || message.compare(0, 6, "+CMGL:") == 0) {
         ESP_LOGD(TAG, "Received SMS from: %s", this->sender_.c_str());
         ESP_LOGD(TAG, "%s", this->message_.c_str());
-        this->sms_received_callback_.call(this->message_, this->sender_);
+        // this->sms_received_callback_.call(this->message_, this->sender_);
         this->state_ = STATE_RECEIVED_SMS;
       } else {
         if (!this->message_.empty())
@@ -395,7 +395,7 @@ void Sim900Component::parse_cmd_(std::string message) {
         if (this->call_state_ != 4) {
           this->call_state_ = 4;
           ESP_LOGI(TAG, "Incoming call from %s", caller_id.c_str());
-          incoming_call_callback_.call(caller_id);
+          // incoming_call_callback_.call(caller_id);
         }
         this->state_ = STATE_INIT;
       }
@@ -404,7 +404,7 @@ void Sim900Component::parse_cmd_(std::string message) {
       ESP_LOGI(TAG, "Call connected");
       if (this->call_state_ != 0) {
         this->call_state_ = 0;
-        this->call_connected_callback_.call();
+        // this->call_connected_callback_.call();
       }
       this->state_ = STATE_INIT;
       break;

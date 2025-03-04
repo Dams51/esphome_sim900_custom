@@ -172,19 +172,19 @@ template<typename... Ts> class Sim900SendSmsAction : public Action<Ts...> {
  Sim900Component *parent_;
 };
 
-template<typename... Ts> class Sim900SendUssdAction : public Action<Ts...> {
- public:
-  Sim900SendUssdAction(Sim900Component *parent) : parent_(parent) {}
-  TEMPLATABLE_VALUE(std::string, ussd)
+// template<typename... Ts> class Sim900SendUssdAction : public Action<Ts...> {
+//  public:
+//   Sim900SendUssdAction(Sim900Component *parent) : parent_(parent) {}
+//   TEMPLATABLE_VALUE(std::string, ussd)
 
-  void play(Ts... x) {
-    auto ussd_code = this->ussd_.value(x...);
-    this->parent_->send_ussd(ussd_code);
-  }
+//   void play(Ts... x) {
+//     auto ussd_code = this->ussd_.value(x...);
+//     this->parent_->send_ussd(ussd_code);
+//   }
 
- protected:
- Sim900Component *parent_;
-};
+//  protected:
+//  Sim900Component *parent_;
+// };
 
 template<typename... Ts> class Sim900DialAction : public Action<Ts...> {
  public:
