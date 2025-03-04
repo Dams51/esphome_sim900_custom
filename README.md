@@ -24,7 +24,7 @@ external_components:
   - source: 
       type: git
       url: https://github.com/Dams51/esphome_sim900_custom
-    components: [sim900]
+    components: [Sim900Component]
 
 uart:
   id: uart_bus        # Optional.
@@ -32,28 +32,29 @@ uart:
   tx_pin: TX
   rx_pin: RX
 
-sim900:
+Sim900Component:
   id: gsm_module      # Optional.
   uart_id: uart_bus   # Optional.
+  power_key_switch_id: power_key_switch # Optional.
 
 sensor:
-  - platform: sim900
+  - platform: Sim900Component
     signal_reseau:
       name: "Sim900 Signal réseau"
 
 binary_sensor:
-  - platform: sim900
+  - platform: Sim900Component
     etat_reseau:
       name: "Sim900 Etat réseau"
 
 text_sensor:
-  - platform: sim900
+  - platform: Sim900Component
     etat_module:
       name: "Sim900 Etat du module"
 
-gpio_switch:
-  - platform: sim900
-    power_key_pin:
-      pin: D3
+switch:
+  - platform: gpio
+    pin: D3
+    id: power_key_switch
 ...
 ```
