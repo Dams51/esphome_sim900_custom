@@ -7,7 +7,7 @@ from esphome.const import (
 )
 from . import CONF_SIM900_ID, Sim900Component
 
-DEPENDENCIES = ["sim900"]
+DEPENDENCIES = ["Sim900Component"]
 
 CONF_ETAT_RESEAU = "etat_reseau"
 

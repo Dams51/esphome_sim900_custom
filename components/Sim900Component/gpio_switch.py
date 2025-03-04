@@ -4,7 +4,7 @@ from esphome.components import gpio_switch
 
 from . import CONF_SIM900_ID, Sim900Component
 
-DEPENDENCIES = ["sim900"]
+DEPENDENCIES = ["Sim900Component"]
 
 CONF_POWER_KEY_PIN = "power_key_pin"
 

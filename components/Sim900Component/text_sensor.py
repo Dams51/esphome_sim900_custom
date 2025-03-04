@@ -4,7 +4,7 @@ from esphome.components import text_sensor
 
 from . import CONF_SIM900_ID, Sim900Component
 
-DEPENDENCIES = ["sim900"]
+DEPENDENCIES = ["Sim900Component"]
 
 CONF_ETAT_MODULE   = "etat_module"
 
