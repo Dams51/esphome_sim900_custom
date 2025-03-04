@@ -10,6 +10,8 @@
 #ifdef USE_SENSOR
 #include "esphome/components/sensor/sensor.h"
 #endif
+#include "esphome/components/text_sensor/text_sensor.h"
+#include "esphome/components/switch/switch.h"
 #include "esphome/components/uart/uart.h"
 #include "esphome/core/automation.h"
 
@@ -61,6 +63,9 @@ class Sim900Component : public uart::UARTDevice, public PollingComponent {
 #ifdef USE_SENSOR
   void set_rssi_sensor(sensor::Sensor *rssi_sensor) { rssi_sensor_ = rssi_sensor; }
 #endif
+  void set_etat_module_text_sensor(text_sensor::TextSensor *etat_module_text_sensor) { etat_module_text_sensor_ = etat_module_text_sensor; }
+  void set_power_key_switch(switch::Switch *power_key_switch) { power_key_switch_ = power_key_switch; }
+
   // void add_on_sms_received_callback(std::function<void(std::string, std::string)> callback) {
   //   this->sms_received_callback_.add(std::move(callback));
   // }
@@ -94,6 +99,10 @@ class Sim900Component : public uart::UARTDevice, public PollingComponent {
 #ifdef USE_SENSOR
   sensor::Sensor *rssi_sensor_{nullptr};
 #endif
+
+  text_sensor::TextSensor *etat_module_text_sensor_{nullptr};
+  switch::Switch *power_key_switch_{nullptr};
+
   std::string sender_;
   std::string message_;
   char read_buffer_[SIM900_READ_BUFFER_LENGTH];

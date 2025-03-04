@@ -19,4 +19,4 @@ async def to_code(config):
 
     if CONF_ETAT_MODULE in config:
         sens = await text_sensor.new_text_sensor(config[CONF_ETAT_MODULE])
-        # cg.add(sim900_component.set_rssi_sensor(sens))
+        cg.add(sim900_component.set_etat_module_text_sensor(sens))
