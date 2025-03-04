@@ -4,7 +4,6 @@ from esphome import automation
 from esphome.const import (
     CONF_ID,
     CONF_MESSAGE,
-    CONF_TRIGGER_ID,
 )
 from esphome.components import uart
 
@@ -14,6 +13,11 @@ MULTI_CONF = True
 
 sim900_ns = cg.esphome_ns.namespace("sim900")
 Sim900Component = sim900_ns.class_("Sim900Component", cg.Component)
+
+from esphome.components import switch
+from esphome.components.gpio import gpio_ns
+# gpio_ns = cg.esphome_ns.namespace("gpio")
+GPIOSwitch = gpio_ns.class_("GPIOSwitch", switch.Switch, cg.Component)
 
 # Sim900ReceivedMessageTrigger = sim900_ns.class_(
 #     "Sim900ReceivedMessageTrigger",
@@ -51,12 +55,14 @@ CONF_SIM900_ID = "sim900_id"
 # CONF_ON_CALL_CONNECTED = "on_call_connected"
 # CONF_ON_CALL_DISCONNECTED = "on_call_disconnected"
 CONF_RECIPIENT = "recipient"
-CONF_USSD = "ussd"
+# CONF_USSD = "ussd"
+CONF_POWER_KEY_SWITCH_ID = "power_key_switch_id"
 
 CONFIG_SCHEMA = cv.All(
     cv.Schema(
         {
             cv.GenerateID(): cv.declare_id(Sim900Component),
+            cv.Optional(CONF_POWER_KEY_SWITCH_ID): cv.use_id(GPIOSwitch),
             # cv.Optional(CONF_ON_SMS_RECEIVED): automation.validate_automation(
             #     {
             #         cv.GenerateID(CONF_TRIGGER_ID): cv.declare_id(
@@ -107,6 +113,10 @@ async def to_code(config):
     await cg.register_component(var, config)
     await uart.register_uart_device(var, config)
 
+    if CONF_POWER_KEY_SWITCH_ID in config:
+        parent = await cg.get_variable(config[CONF_POWER_KEY_SWITCH_ID])
+        cg.add(var.set_power_key_switch(parent))
+    
     # for conf in config.get(CONF_ON_SMS_RECEIVED, []):
     #     trigger = cg.new_Pvariable(conf[CONF_TRIGGER_ID], var)
     #     await automation.build_automation(
