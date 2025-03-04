@@ -19,4 +19,4 @@ async def to_code(config):
 
     if CONF_POWER_KEY_PIN in config:
         sens = await gpio_switch.new_gpio_switch(config[CONF_POWER_KEY_PIN])
-        cg.add(sim900_component.set_registered_binary_sensor(sens))
+        # cg.add(sim900_component.set_registered_binary_sensor(sens))
