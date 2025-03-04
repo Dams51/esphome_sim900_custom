@@ -21,6 +21,6 @@ async def to_code(config):
 
     if CONF_POWER_KEY_PIN in config:
         sens = await switch.new_switch(config[CONF_POWER_KEY_PIN])
-        pin = await cg.gpio_pin_expression(config[CONF_PIN])
+        pin = await cg.gpio_pin_expression(config[CONF_POWER_KEY_PIN][CONF_PIN])
         cg.add(sens.set_pin(pin))
         cg.add(sim900_component.set_power_key_switch(sens))
