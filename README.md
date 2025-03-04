@@ -35,5 +35,25 @@ uart:
 sim900:
   id: gsm_module      # Optional.
   uart_id: uart_bus   # Optional.
+
+sensor:
+  - platform: sim900
+    signal_reseau:
+      name: "Sim900 Signal réseau"
+
+binary_sensor:
+  - platform: sim900
+    etat_reseau:
+      name: "Sim900 Etat réseau"
+
+text_sensor:
+  - platform: sim900
+    etat_module:
+      name: "Sim900 Etat du module"
+
+gpio_switch:
+  - platform: sim900
+    power_key_pin:
+      pin: D3
 ...
 ```
