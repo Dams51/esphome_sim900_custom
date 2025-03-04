@@ -6,7 +6,7 @@ from esphome.const import CONF_PIN
 
 from . import CONF_SIM900_ID, Sim900Component
 
-DEPENDENCIES = ["Sim900Component"]
+DEPENDENCIES = ["Sim900Component", "GPIOSwitch"]
 
 CONF_POWER_KEY_PIN = "power_key_pin"
 
