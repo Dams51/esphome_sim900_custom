@@ -1,0 +1,105 @@
+esphome:
+  name: "sim900-module"
+  libraries:
+    - "PDUlib"
+
+esp8266:
+  board: d1_mini
+
+external_components:
+  - source: 
+      type: git
+      url: https://github.com/Dams51/esphome_sim900_custom
+    components: [Sim900Component]
+
+uart:
+  id: uart_bus        # Optional.
+  baud_rate: 9600
+  tx_pin: TX
+  rx_pin: RX
+
+Sim900Component:
+  id: gsm_module      # Optional.
+  uart_id: uart_bus   # Optional.
+  power_key_switch_id: power_key_switch # Optional.
+
+sensor:
+  - platform: Sim900Component
+    signal_reseau:
+      name: "Sim900 Signal réseau"
+
+binary_sensor:
+  - platform: Sim900Component
+    etat_reseau:
+      name: "Sim900 Etat réseau"
+
+text_sensor:
+  - platform: Sim900Component
+    etat_module:
+      name: "Sim900 Etat du module"
+
+switch:
+  - platform: gpio
+    pin: D3
+    id: power_key_switch
+
+button:
+  - platform: template
+    name: $devicename Appeler
+    icon: mdi:phone-outgoing
+    on_press:
+      - sim900.dial:
+          recipient: "+33XXXXXXXXX"
+
+  - platform: template
+    name: $devicename Répondre a l'appel
+    icon: mdi:phone-check
+    on_press:
+      - sim900.connect
+
+  - platform: template
+    name: $devicename Terminer l'appel
+    icon: mdi:phone-hangup
+    on_press:
+      - sim900.disconnect
+
+api:
+  services:
+    - service: send_sms
+      variables:
+        recipient: string
+        message: string
+      then:
+        - sim900.send_sms:
+            recipient: !lambda 'return recipient;'
+            message: !lambda 'return message;'
+    - service: call
+      variables:
+        recipient: string
+      then:
+        - sim900.dial:
+            recipient: !lambda 'return recipient;'
+    - service: answer_call
+      then:
+        - sim900.connect
+    - service: close_call
+      then:
+        - sim900.disconnect
+
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: !secret ha_enc_key
+
+ota:
+  password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "A Fallback Hotspot"
+    password: "xxxxxxxxxxx"
