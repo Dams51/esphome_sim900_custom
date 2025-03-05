@@ -15,6 +15,7 @@
 #include "esphome/components/gpio/switch/gpio_switch.h"
 #include "esphome/components/uart/uart.h"
 #include "esphome/core/automation.h"
+#include "pdulib.h"
 
 namespace esphome {
 namespace sim900 {
@@ -26,13 +27,19 @@ enum State {
   STATE_INIT,
   STATE_SETUP_CMGF,
   STATE_SETUP_CLIP,
+  STATE_SETUP_CSCS_IRA,
+  STATE_SETUP_CSCA,
+  STATE_CSCA_RESPONSE,
+  STATE_SETUP_CSCS_UCS2,
+  STATE_SETUP_CNMI,
   STATE_CREG,
   STATE_CREG_WAIT,
   STATE_CSQ,
   STATE_CSQ_RESPONSE,
+  STATE_CPAS,
+  STATE_CPAS_RESPONSE,
   STATE_SENDING_SMS_1,
   STATE_SENDING_SMS_2,
-  STATE_SENDING_SMS_3,
   STATE_CHECK_SMS,
   STATE_PARSE_SMS_RESPONSE,
   STATE_RECEIVE_SMS,
@@ -43,11 +50,11 @@ enum State {
   STATE_PARSE_CLIP,
   STATE_ATA_SENT,
   STATE_CHECK_CALL,
-  STATE_SETUP_USSD,
-  STATE_SEND_USSD1,
-  STATE_SEND_USSD2,
-  STATE_CHECK_USSD,
-  STATE_RECEIVED_USSD
+  // STATE_SETUP_USSD,
+  // STATE_SEND_USSD1,
+  // STATE_SEND_USSD2,
+  // STATE_CHECK_USSD,
+  // STATE_RECEIVED_USSD
 };
 
 class Sim900Component : public uart::UARTDevice, public PollingComponent {
@@ -104,6 +111,8 @@ class Sim900Component : public uart::UARTDevice, public PollingComponent {
   text_sensor::TextSensor *etat_module_text_sensor_{nullptr};
   gpio::GPIOSwitch *power_key_switch_{nullptr};
 
+  PDU pdu_object_ = PDU(512);
+
   std::string sender_;
   std::string message_;
   char read_buffer_[SIM900_READ_BUFFER_LENGTH];
@@ -115,7 +124,7 @@ class Sim900Component : public uart::UARTDevice, public PollingComponent {
   bool registered_{false};
 
   std::string recipient_;
-  std::string outgoing_message_;
+  int pdu_length_{0};
   // std::string ussd_;
   bool send_pending_;
   bool dial_pending_;

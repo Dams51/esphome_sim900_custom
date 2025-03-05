@@ -9,6 +9,7 @@ static const char *const TAG = "sim900";
 
 const char ASCII_CR = 0x0D;
 const char ASCII_LF = 0x0A;
+const char ASCII_CTRL_Z = 0x1A;
 
 void Sim900Component::update() {
   if (this->watch_dog_++ == 2) {
@@ -21,7 +22,11 @@ void Sim900Component::update() {
 
   if (state_ == STATE_INIT) {
     if (this->registered_ && this->send_pending_) {
-      this->send_cmd_("AT+CSCS=\"GSM\"");
+      ESP_LOGD(TAG, "Envoi SMS - Taille PDU = %i", this->pdu_length_);
+      std::string cmd = "AT+CMGS=" + std::to_string(this->pdu_length_);
+      ESP_LOGV(TAG, "S: %s", cmd.c_str());
+      this->write_str(cmd.c_str());
+      this->write_byte(ASCII_CR);
       this->state_ = STATE_SENDING_SMS_1;
     } else if (this->registered_ && this->dial_pending_) {
       this->send_cmd_("AT+CSCS=\"GSM\"");
@@ -82,6 +87,8 @@ void Sim900Component::parse_cmd_(std::string message) {
         this->call_state_ = 6;
         // this->call_disconnected_callback_.call();
       }
+    } else if (message == "ERROR") {
+      ESP_LOGE(TAG, "Command error");
     }
   }
 
@@ -119,80 +126,73 @@ void Sim900Component::parse_cmd_(std::string message) {
             this->call_state_ = 6;
             // this->call_disconnected_callback_.call();
           }
-        } else if (message.compare(0, 6, "+CUSD:") == 0) {
-          // Incoming USSD MESSAGE
-          this->state_ = STATE_CHECK_USSD;
+        // } else if (message.compare(0, 6, "+CUSD:") == 0) {
+        //   // Incoming USSD MESSAGE
+        //   this->state_ = STATE_CHECK_USSD;
         }
         break;
       }
 
-      // Else fall thru ...
-    }
-    case STATE_CHECK_SMS:
-      send_cmd_("AT+CMGL=\"ALL\"");
+      // Else fall thru STATE_CHECK_SMS same
+      send_cmd_("AT+CMGL=0,1");
       this->state_ = STATE_PARSE_SMS_RESPONSE;
       this->parse_index_ = 0;
       break;
-    case STATE_DISABLE_ECHO:
+    }
+
+  // SETUP
+    case STATE_DISABLE_ECHO: // Step 0
       send_cmd_("ATE0");
       this->state_ = STATE_SETUP_CMGF;
       this->expect_ack_ = true;
       break;
-    case STATE_SETUP_CMGF:
-      send_cmd_("AT+CMGF=1");
+    case STATE_SETUP_CMGF: // Step 1
+      send_cmd_("AT+CMGF=0");
       this->state_ = STATE_SETUP_CLIP;
       this->expect_ack_ = true;
       break;
-    case STATE_SETUP_CLIP:
+    case STATE_SETUP_CLIP: // Step 2
       send_cmd_("AT+CLIP=1");
+      this->state_ = STATE_SETUP_CSCS_IRA;
+      this->expect_ack_ = true;
+      break;
+    case STATE_SETUP_CSCS_IRA: // Step 3
+      send_cmd_("AT+CSCS=\"IRA\"");
+      this->state_ = STATE_SETUP_CSCA;
+      this->expect_ack_ = true;
+      break;
+    case STATE_SETUP_CSCA: // Step 4.1
+      send_cmd_("AT+CSCA?");
+      this->state_ = STATE_CSCA_RESPONSE;
+      break;
+    case STATE_CSCA_RESPONSE: // Step 4.2
+      // SMS Service Center Address : needed for SMS sending in PDU mode
+      if (message.compare(0, 6, "+CSCA:") == 0) {
+        message.substr(6, comma - 6)
+        std::string SCA = message.substr(8, 12);
+        ESP_LOGD(TAG, "SMS Service Center Address = %s", SCA.c_str());
+        this->pdu_object_.setSCAnumber(SCA.c_str());
+      }
+      this->expect_ack_ = true;
+      this->state_ = STATE_SETUP_CSCS_UCS2;
+      break;
+    case STATE_SETUP_CSCS_UCS2: // Step 5
+      send_cmd_("AT+CSCS=\"UCS2\"");
+      this->state_ = STATE_SETUP_CNMI;
+      this->expect_ack_ = true;
+      break;
+    case STATE_SETUP_CNMI: // Step 6
+      send_cmd_("AT+CNMI=2,1");
       this->state_ = STATE_CREG;
       this->expect_ack_ = true;
       break;
-    case STATE_SETUP_USSD:
-      // send_cmd_("AT+CUSD=1");
-      // this->state_ = STATE_CREG;
-      // this->expect_ack_ = true;
-      break;
-    case STATE_SEND_USSD1:
-      // this->send_cmd_("AT+CUSD=1, \"" + this->ussd_ + "\"");
-      // this->state_ = STATE_SEND_USSD2;
-      // this->expect_ack_ = true;
-      break;
-    case STATE_SEND_USSD2:
-      // ESP_LOGD(TAG, "SendUssd2: '%s'", message.c_str());
-      // if (message == "OK") {
-      //   // Dialing
-      //   ESP_LOGD(TAG, "Dialing ussd code: '%s' done.", this->ussd_.c_str());
-      //   this->state_ = STATE_CHECK_USSD;
-      //   this->send_ussd_pending_ = false;
-      // } else {
-      //   this->set_registered_(false);
-      //   this->state_ = STATE_INIT;
-      //   this->send_cmd_("AT+CMEE=2");
-      //   this->write(26);
-      // }
-      break;
-    case STATE_CHECK_USSD:
-      // ESP_LOGD(TAG, "Check ussd code: '%s'", message.c_str());
-      // if (message.compare(0, 6, "+CUSD:") == 0) {
-      //   this->state_ = STATE_RECEIVED_USSD;
-      //   this->ussd_ = "";
-      //   size_t start = 10;
-      //   size_t end = message.find_last_of(',');
-      //   if (end > start) {
-      //     this->ussd_ = message.substr(start + 1, end - start - 2);
-      //     this->ussd_received_callback_.call(this->ussd_);
-      //   }
-      // }
-      // // Otherwise we receive another OK, we do nothing just wait polling to continuously check for SMS
-      // if (message == "OK")
-      //   this->state_ = STATE_INIT;
-      break;
-    case STATE_CREG:
+
+  // UPDATE Status
+    case STATE_CREG: // Step 1.1
       send_cmd_("AT+CREG?");
       this->state_ = STATE_CREG_WAIT;
       break;
-    case STATE_CREG_WAIT: {
+    case STATE_CREG_WAIT: { // Step 1.2
       // Response: "+CREG: 0,1" -- the one there means registered ok
       //           "+CREG: -,-" means not registered ok
       bool registered = message.compare(0, 6, "+CREG:") == 0 && (message[9] == '1' || message[9] == '5');
@@ -216,29 +216,38 @@ void Sim900Component::parse_cmd_(std::string message) {
       set_registered_(registered);
       break;
     }
-    case STATE_CSQ:
+    case STATE_CSQ: // Step 2.1
       send_cmd_("AT+CSQ");
       this->state_ = STATE_CSQ_RESPONSE;
       break;
-    case STATE_CSQ_RESPONSE:
+    case STATE_CSQ_RESPONSE: // Step 2.2
       if (message.compare(0, 5, "+CSQ:") == 0) {
         size_t comma = message.find(',', 6);
         if (comma != 6) {
           int rssi = parse_number<int>(message.substr(6, comma - 6)).value_or(0);
-
-#ifdef USE_SENSOR
-          if (this->rssi_sensor_ != nullptr) {
-            this->rssi_sensor_->publish_state(rssi);
-          } else {
-            ESP_LOGD(TAG, "RSSI: %d", rssi);
-          }
-#else
-          ESP_LOGD(TAG, "RSSI: %d", rssi);
-#endif
+          set_rssi_(rssi);
         }
       }
       this->expect_ack_ = true;
+      this->state_ = STATE_CPAS;
+      break;
+    case STATE_CPAS: // Step 3.1
+      send_cmd_("AT+CPAS");
+      this->state_ = STATE_CSQ_RESPONSE;
+      break;
+    case STATE_CPAS_RESPONSE: // Step 3.2
+      if (message.compare(0, 6, "+CPAS:") == 0) {
+        int val = message[7] - '0';
+        set_etat_module_(val);
+      }
+      this->expect_ack_ = true;
       this->state_ = STATE_CHECK_SMS;
+      break;
+
+    case STATE_CHECK_SMS:
+      send_cmd_("AT+CMGL=\"ALL\"");
+      this->state_ = STATE_PARSE_SMS_RESPONSE;
+      this->parse_index_ = 0;
       break;
     case STATE_PARSE_SMS_RESPONSE:
       if (message.compare(0, 6, "+CMGL:") == 0 && this->parse_index_ == 0) {
@@ -314,6 +323,8 @@ void Sim900Component::parse_cmd_(std::string message) {
       }
       this->state_ = STATE_INIT;
       break;
+
+  // SIM Stuff
     case STATE_RECEIVE_SMS:
       /* Our recipient is set and the message body is in message
         kick ESPHome callback now
@@ -330,20 +341,19 @@ void Sim900Component::parse_cmd_(std::string message) {
       }
       break;
     case STATE_RECEIVED_SMS:
-    case STATE_RECEIVED_USSD:
+    // case STATE_RECEIVED_USSD:
       // Let the buffer flush. Next poll will request to delete the parsed index message.
       break;
     case STATE_SENDING_SMS_1:
-      this->send_cmd_("AT+CMGS=\"" + this->recipient_ + "\"");
-      this->state_ = STATE_SENDING_SMS_2;
-      break;
-    case STATE_SENDING_SMS_2:
       if (message == ">") {
-        // Send sms body
-        ESP_LOGI(TAG, "Sending to %s message: '%s'", this->recipient_.c_str(), this->outgoing_message_.c_str());
-        this->write_str(this->outgoing_message_.c_str());
-        this->write(26);
-        this->state_ = STATE_SENDING_SMS_3;
+        const char * PDU = this->pdu_object_.getSMS();
+        std::string str_PDU = PDU;
+        str_PDU = str_PDU.substr(0, str_PDU.length() - 1);
+        ESP_LOGD(TAG, "Envoi SMS - PDU = '%s'", str_PDU.c_str());
+        ESP_LOGV(TAG, "S: %s", str_PDU.c_str());
+        this->write_str(str_PDU.c_str());
+        this->write_byte(ASCII_CTRL_Z);
+        this->state_ = STATE_SENDING_SMS_2;
       } else {
         set_registered_(false);
         this->state_ = STATE_INIT;
@@ -351,7 +361,7 @@ void Sim900Component::parse_cmd_(std::string message) {
         this->write(26);
       }
       break;
-    case STATE_SENDING_SMS_3:
+    case STATE_SENDING_SMS_2:
       if (message.compare(0, 6, "+CMGS:") == 0) {
         ESP_LOGD(TAG, "SMS Sent OK: %s", message.c_str());
         this->send_pending_ = false;
@@ -408,6 +418,48 @@ void Sim900Component::parse_cmd_(std::string message) {
       }
       this->state_ = STATE_INIT;
       break;
+
+  // USSD
+    // case STATE_SETUP_USSD:
+    //   // send_cmd_("AT+CUSD=1");
+    //   // this->state_ = STATE_CREG;
+    //   // this->expect_ack_ = true;
+    //   break;
+    // case STATE_SEND_USSD1:
+    //   // this->send_cmd_("AT+CUSD=1, \"" + this->ussd_ + "\"");
+    //   // this->state_ = STATE_SEND_USSD2;
+    //   // this->expect_ack_ = true;
+    //   break;
+    // case STATE_SEND_USSD2:
+    //   // ESP_LOGD(TAG, "SendUssd2: '%s'", message.c_str());
+    //   // if (message == "OK") {
+    //   //   // Dialing
+    //   //   ESP_LOGD(TAG, "Dialing ussd code: '%s' done.", this->ussd_.c_str());
+    //   //   this->state_ = STATE_CHECK_USSD;
+    //   //   this->send_ussd_pending_ = false;
+    //   // } else {
+    //   //   this->set_registered_(false);
+    //   //   this->state_ = STATE_INIT;
+    //   //   this->send_cmd_("AT+CMEE=2");
+    //   //   this->write(26);
+    //   // }
+    //   break;
+    // case STATE_CHECK_USSD:
+    //   // ESP_LOGD(TAG, "Check ussd code: '%s'", message.c_str());
+    //   // if (message.compare(0, 6, "+CUSD:") == 0) {
+    //   //   this->state_ = STATE_RECEIVED_USSD;
+    //   //   this->ussd_ = "";
+    //   //   size_t start = 10;
+    //   //   size_t end = message.find_last_of(',');
+    //   //   if (end > start) {
+    //   //     this->ussd_ = message.substr(start + 1, end - start - 2);
+    //   //     this->ussd_received_callback_.call(this->ussd_);
+    //   //   }
+    //   // }
+    //   // // Otherwise we receive another OK, we do nothing just wait polling to continuously check for SMS
+    //   // if (message == "OK")
+    //   //   this->state_ = STATE_INIT;
+    //   break;
     default:
       ESP_LOGW(TAG, "Unhandled: %s - %d", message.c_str(), this->state_);
       break;
@@ -450,9 +502,31 @@ void Sim900Component::loop() {
 }
 
 void Sim900Component::send_sms(const std::string &recipient, const std::string &message) {
-  this->recipient_ = recipient;
-  this->outgoing_message_ = message;
-  this->send_pending_ = true;
+  ESP_LOGI(TAG, "Envoi SMS, Tel : '%s', SMS : '%s'", recipient.c_str(), message.c_str());
+  this->pdu_length_ = 0;
+  this->pdu_length_ = this->pdu_object_.encodePDU(recipient.c_str(), message.c_str());
+  if (this->pdu_length_ > 0) {
+    this->send_pending_ = true;
+  } else {
+    switch(this->pdu_length_) {
+      case this->pdu_object_.UCS2_TOO_LONG:
+      case this->pdu_object_.GSM7_TOO_LONG:
+          ESP_LOGE(TAG, "Envoi SMS - Message too long to send as a single message, change to multipart");
+          break;
+        case this->pdu_object_.WORK_BUFFER_TOO_SMALL:
+          ESP_LOGE(TAG, "Envoi SMS - Work buffer too small, change PDU constructor");
+          break;
+        case this->pdu_object_.ADDRESS_FORMAT:
+          ESP_LOGE(TAG, "Envoi SMS - SCA or Target address illegal characters or too long");
+          break;
+        case this->pdu_object_.MULTIPART_NUMBERS:
+          ESP_LOGE(TAG, "Envoi SMS - Multipart numbers illogical");
+          break;
+        case this->pdu_object_.ALPHABET_8BIT_NOT_SUPPORTED:
+          ESP_LOGE(TAG, "Envoi SMS - 8 bit alphabert not supported");
+          break;
+    }
+  }
 }
 
 // void Sim900Component::send_ussd(const std::string &ussd_code) {
@@ -469,6 +543,7 @@ void Sim900Component::dump_config() {
 #ifdef USE_SENSOR
   LOG_SENSOR("  ", "Rssi", this->rssi_sensor_);
 #endif
+  LOG_TEXT_SENSOR("  ", "Etat du module", this->etat_module_text_sensor_);
 }
 void Sim900Component::dial(const std::string &recipient) {
   this->recipient_ = recipient;
@@ -483,6 +558,60 @@ void Sim900Component::set_registered_(bool registered) {
   if (this->registered_binary_sensor_ != nullptr)
     this->registered_binary_sensor_->publish_state(registered);
 #endif
+}
+void Sim900Component::set_rssi_(int rssi) {
+  int signal=0;
+  switch (rssi) {
+    case 0:
+      signal = 115;
+      break;
+    case 1:
+      signal = 111;
+      break;
+    case 31:
+      signal = 52;
+      break;
+    case 99:
+      signal = 0;
+      break;
+    default:
+      signal = map(rssi, 2, 30, 110, 54);
+  }
+  signal = signal * -1;
+  ESP_LOGD(TAG, "RSSI: signal = %i dBm", signal);
+#ifdef USE_SENSOR
+  if (this->rssi_sensor_ != nullptr) {
+    this->rssi_sensor_->publish_state(rssi);
+  } else {
+    ESP_LOGD(TAG, "RSSI: %d", rssi);
+  }
+#else
+  ESP_LOGD(TAG, "RSSI: %d", rssi);
+#endif
+}
+void Sim900Component::set_etat_module_(int state_val) {
+    std::string modem_status = "";
+    switch (state_val) {
+      case 0:
+        modem_status = "Ready";
+        break;
+      case 2:
+        modem_status = "Unknown";
+        break;
+      case 3:
+        modem_status = "Ringing";
+        break;
+      case 4:
+        modem_status = "Call in progress";
+        break;
+      default:
+        modem_status = "Unknown";
+    }
+  if (this->etat_module_text_sensor_ != nullptr) {
+    this->etat_module_text_sensor_->publish_state(modem_status);
+  } else {
+    ESP_LOGD(TAG, "Etat du module: %s", modem_status.c_str());
+  }
 }
 
 }  // namespace sim900
