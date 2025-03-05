@@ -99,6 +99,8 @@ class Sim900Component : public uart::UARTDevice, public PollingComponent {
   void send_cmd_(const std::string &message);
   void parse_cmd_(std::string message);
   void set_registered_(bool registered);
+  void set_rssi_(int rssi);
+  void set_etat_module_(int state_val);
 
 #ifdef USE_BINARY_SENSOR
   binary_sensor::BinarySensor *registered_binary_sensor_{nullptr};

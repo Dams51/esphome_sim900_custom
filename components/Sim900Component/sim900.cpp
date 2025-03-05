@@ -168,7 +168,6 @@ void Sim900Component::parse_cmd_(std::string message) {
     case STATE_CSCA_RESPONSE: // Step 4.2
       // SMS Service Center Address : needed for SMS sending in PDU mode
       if (message.compare(0, 6, "+CSCA:") == 0) {
-        message.substr(6, comma - 6)
         std::string SCA = message.substr(8, 12);
         ESP_LOGD(TAG, "SMS Service Center Address = %s", SCA.c_str());
         this->pdu_object_.setSCAnumber(SCA.c_str());
