@@ -244,7 +244,7 @@ void Sim900Component::parse_cmd_(std::string message) {
       break;
 
     case STATE_CHECK_SMS:
-      send_cmd_("AT+CMGL=\"ALL\"");
+      send_cmd_("AT+CMGL=0,1");
       this->state_ = STATE_PARSE_SMS_RESPONSE;
       this->parse_index_ = 0;
       break;
@@ -258,15 +258,9 @@ void Sim900Component::parse_cmd_(std::string message) {
           if (item == 1) {  // Slot Index
             this->parse_index_ = parse_number<uint8_t>(message.substr(start, end - start)).value_or(0);
           }
-          // item 2 = STATUS, usually "REC UNREAD"
-          if (item == 3) {  // recipient
-            // Add 1 and remove 2 from substring to get rid of "quotes"
-            this->sender_ = message.substr(start + 1, end - start - 2);
-            this->message_.clear();
-            break;
-          }
-          // item 4 = ""
-          // item 5 = Received timestamp
+          // item 2 = STATUS, usually 0 for "REC UNREAD"
+          // item 3 = ""
+          // item 4 = length of the actual TP data unit in octets
           start = end + 1;
           end = message.find(',', start);
         }
@@ -275,6 +269,8 @@ void Sim900Component::parse_cmd_(std::string message) {
           ESP_LOGD(TAG, "Invalid message %d %s", this->state_, message.c_str());
           return;
         }
+        this->sender_.clear();
+        this->message_.clear();
         this->state_ = STATE_RECEIVE_SMS;
       }
       // Otherwise we receive another OK
@@ -325,18 +321,97 @@ void Sim900Component::parse_cmd_(std::string message) {
 
   // SIM Stuff
     case STATE_RECEIVE_SMS:
-      /* Our recipient is set and the message body is in message
-        kick ESPHome callback now
-      */
       if (ok || message.compare(0, 6, "+CMGL:") == 0) {
+        // PDU Already decoded
         ESP_LOGD(TAG, "Received SMS from: %s", this->sender_.c_str());
         ESP_LOGD(TAG, "%s", this->message_.c_str());
         // this->sms_received_callback_.call(this->message_, this->sender_);
         this->state_ = STATE_RECEIVED_SMS;
       } else {
-        if (!this->message_.empty())
-          this->message_ += "\n";
-        this->message_ += message;
+        // --------------------  PDU  --------------------
+        std::string pdu = message;
+
+        int decode_pos = 0;
+        int smsc_length = std::stoul(pdu.substr(decode_pos, 2), nullptr, 16);
+        decode_pos += 2;
+        // ESP_LOGV("MyCustomSim900", "PDU - SMSC = %i", smsc_length);
+
+        // Skip le num du SMSC
+        decode_pos += 2 * smsc_length;
+
+        int pdu_header = std::stoul(pdu.substr(decode_pos, 2), nullptr, 16);
+        decode_pos += 2;
+        // ESP_LOGV("MyCustomSim900", "PDU - Header = %i", pdu_header);
+
+        int sender_length = std::stoul(pdu.substr(decode_pos, 2), nullptr, 16);
+        decode_pos += 2;
+        // ESP_LOGV("MyCustomSim900", "PDU - sender length = %i", sender_length);
+
+        decode_pos += 2;
+
+        char sender[sender_length + 1];
+        for (int i = 0; i < sender_length; i = i+2 ){
+          if (i == sender_length - 1) {
+            decode_pos++;
+            sender[i+1] = 0;
+          }
+          else
+          {
+            sender[i+1] = pdu[decode_pos++];
+          }
+          sender[i] = pdu[decode_pos++];
+        }
+        std::string data_sender = sender;
+        this->sender_ = "+" + data_sender;
+        // ESP_LOGV("MyCustomSim900", "PDU - sender = %s", data_sender.c_str());
+
+        // TP-PID
+        decode_pos += 2;
+
+        // TP-DCS = codage (change selon s'il y a des accents (00 = normal / 7 bits, 08 = accent / 16 bits))
+        int data_code = std::stoul(pdu.substr(decode_pos, 2), nullptr, 16);
+        decode_pos += 2;
+        // ESP_LOGV("MyCustomSim900", "PDU - encodage = %i", data_code);
+
+        decode_pos += 14;
+
+        // TP-UDL = length of data
+        int data_length = std::stoul(pdu.substr(decode_pos, 2), nullptr, 16);
+        decode_pos += 2;
+        // ESP_LOGV("MyCustomSim900", "PDU - data length = %i", data_length);
+
+        std::string payload = pdu.substr(decode_pos);
+        std::string output_sms_string = "";
+        ESP_LOGV("MyCustomSim900", "PDU - payload = %s", payload.c_str());
+        if (data_code == 8) {
+          ESP_LOGV("MyCustomSim900", "PDU - 16 bits message");
+          
+          int payload_pos = 0;
+          for (int i = 0; i < data_length; i = i+2 ){
+            int char_code = std::stoul(payload.substr(payload_pos, 4), nullptr, 16);
+            payload_pos += 4;
+            // ESP_LOGV("MyCustomSim900", "PDU - char_code = %i", char_code);
+
+            if (char_code < 128)
+            {
+              char ascii = char_code;
+              output_sms_string += ascii;
+              // ESP_LOGV("MyCustomSim900", "PDU - char = %s", ascii);
+            }
+            else
+            {
+              // Extended ASCII
+              // ESP_LOGV("MyCustomSim900", "PDU - char_code = %i", char_code);
+              output_sms_string.append(Extended_ASCII_Char(char_code));
+            }
+          }
+        }
+        else
+        {
+          ESP_LOGV("MyCustomSim900", "PDU - 7 bits message");
+          output_sms_string = Decode_GSM7bit_PDU_Payload(payload, data_length);
+        }
+        this->message_ = output_sms_string;
       }
       break;
     case STATE_RECEIVED_SMS:
