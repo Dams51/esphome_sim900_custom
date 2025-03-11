@@ -1,5 +1,10 @@
 #include <string>
-#include "pdulib.h"
+// #include "pdulib.h"
+
+#ifdef BITMASK_7BITS
+#else
+#define BITMASK_7BITS 0x7F
+#endif
 
 namespace esphome {
     namespace simUtils {
