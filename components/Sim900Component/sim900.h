@@ -58,7 +58,7 @@ enum State {
   // STATE_RECEIVED_USSD
 };
 
-class Sim900Component : public uart::UARTDevice, public CustomAPIDevice, public PollingComponent {
+class Sim900Component : public uart::UARTDevice, public api::CustomAPIDevice, public PollingComponent {
  public:
   /// Retrieve the latest sensor values. This operation takes approximately 16ms.
   void update() override;
