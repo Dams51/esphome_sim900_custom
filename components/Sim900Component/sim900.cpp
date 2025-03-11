@@ -1,4 +1,5 @@
 #include "sim900.h"
+#include "simUtils.h"
 #include "esphome/core/log.h"
 #include <cstring>
 
@@ -334,18 +335,18 @@ void Sim900Component::parse_cmd_(std::string message) {
         int decode_pos = 0;
         int smsc_length = std::stoul(pdu.substr(decode_pos, 2), nullptr, 16);
         decode_pos += 2;
-        // ESP_LOGV("MyCustomSim900", "PDU - SMSC = %i", smsc_length);
+        // ESP_LOGV(TAG, "PDU - SMSC = %i", smsc_length);
 
         // Skip le num du SMSC
         decode_pos += 2 * smsc_length;
 
         int pdu_header = std::stoul(pdu.substr(decode_pos, 2), nullptr, 16);
         decode_pos += 2;
-        // ESP_LOGV("MyCustomSim900", "PDU - Header = %i", pdu_header);
+        // ESP_LOGV(TAG, "PDU - Header = %i", pdu_header);
 
         int sender_length = std::stoul(pdu.substr(decode_pos, 2), nullptr, 16);
         decode_pos += 2;
-        // ESP_LOGV("MyCustomSim900", "PDU - sender length = %i", sender_length);
+        // ESP_LOGV(TAG, "PDU - sender length = %i", sender_length);
 
         decode_pos += 2;
 
@@ -363,7 +364,7 @@ void Sim900Component::parse_cmd_(std::string message) {
         }
         std::string data_sender = sender;
         this->sender_ = "+" + data_sender;
-        // ESP_LOGV("MyCustomSim900", "PDU - sender = %s", data_sender.c_str());
+        // ESP_LOGV(TAG, "PDU - sender = %s", data_sender.c_str());
 
         // TP-PID
         decode_pos += 2;
@@ -371,45 +372,45 @@ void Sim900Component::parse_cmd_(std::string message) {
         // TP-DCS = codage (change selon s'il y a des accents (00 = normal / 7 bits, 08 = accent / 16 bits))
         int data_code = std::stoul(pdu.substr(decode_pos, 2), nullptr, 16);
         decode_pos += 2;
-        // ESP_LOGV("MyCustomSim900", "PDU - encodage = %i", data_code);
+        // ESP_LOGV(TAG, "PDU - encodage = %i", data_code);
 
         decode_pos += 14;
 
         // TP-UDL = length of data
         int data_length = std::stoul(pdu.substr(decode_pos, 2), nullptr, 16);
         decode_pos += 2;
-        // ESP_LOGV("MyCustomSim900", "PDU - data length = %i", data_length);
+        // ESP_LOGV(TAG, "PDU - data length = %i", data_length);
 
         std::string payload = pdu.substr(decode_pos);
         std::string output_sms_string = "";
-        ESP_LOGV("MyCustomSim900", "PDU - payload = %s", payload.c_str());
+        ESP_LOGV(TAG, "PDU - payload = %s", payload.c_str());
         if (data_code == 8) {
-          ESP_LOGV("MyCustomSim900", "PDU - 16 bits message");
+          ESP_LOGV(TAG, "PDU - 16 bits message");
           
           int payload_pos = 0;
           for (int i = 0; i < data_length; i = i+2 ){
             int char_code = std::stoul(payload.substr(payload_pos, 4), nullptr, 16);
             payload_pos += 4;
-            // ESP_LOGV("MyCustomSim900", "PDU - char_code = %i", char_code);
+            // ESP_LOGV(TAG, "PDU - char_code = %i", char_code);
 
             if (char_code < 128)
             {
               char ascii = char_code;
               output_sms_string += ascii;
-              // ESP_LOGV("MyCustomSim900", "PDU - char = %s", ascii);
+              // ESP_LOGV(TAG, "PDU - char = %s", ascii);
             }
             else
             {
               // Extended ASCII
-              // ESP_LOGV("MyCustomSim900", "PDU - char_code = %i", char_code);
-              output_sms_string.append(Extended_ASCII_Char(char_code));
+              // ESP_LOGV(TAG, "PDU - char_code = %i", char_code);
+              output_sms_string.append(GsmUtils::Extended_ASCII_Char(char_code));
             }
           }
         }
         else
         {
-          ESP_LOGV("MyCustomSim900", "PDU - 7 bits message");
-          output_sms_string = Decode_GSM7bit_PDU_Payload(payload, data_length);
+          ESP_LOGV(TAG, "PDU - 7 bits message");
+          output_sms_string = GsmUtils::Decode_GSM7bit_PDU_Payload(payload, data_length);
         }
         this->message_ = output_sms_string;
       }
