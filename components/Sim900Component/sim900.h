@@ -57,7 +57,7 @@ enum State {
   // STATE_RECEIVED_USSD
 };
 
-class Sim900Component : public uart::UARTDevice, public PollingComponent {
+class Sim900Component : public uart::UARTDevice, public CustomAPIDevice, public PollingComponent {
  public:
   /// Retrieve the latest sensor values. This operation takes approximately 16ms.
   void update() override;
@@ -101,6 +101,8 @@ class Sim900Component : public uart::UARTDevice, public PollingComponent {
   void set_registered_(bool registered);
   void set_rssi_(int rssi);
   void set_etat_module_(int state_val);
+  void rise_incoming_call_event(const std::string caller);
+  void rise_sms_event(const std::string sender, const std::string message);
 
 #ifdef USE_BINARY_SENSOR
   binary_sensor::BinarySensor *registered_binary_sensor_{nullptr};

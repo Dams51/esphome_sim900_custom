@@ -326,6 +326,7 @@ void Sim900Component::parse_cmd_(std::string message) {
         // PDU Already decoded
         ESP_LOGD(TAG, "Received SMS from: %s", this->sender_.c_str());
         ESP_LOGD(TAG, "%s", this->message_.c_str());
+        rise_sms_event(this->sender_, this->message_);
         // this->sms_received_callback_.call(this->message_, this->sender_);
         this->state_ = STATE_RECEIVED_SMS;
       } else {
@@ -480,6 +481,7 @@ void Sim900Component::parse_cmd_(std::string message) {
         if (this->call_state_ != 4) {
           this->call_state_ = 4;
           ESP_LOGI(TAG, "Incoming call from %s", caller_id.c_str());
+          rise_incoming_call_event(caller_id);
           // incoming_call_callback_.call(caller_id);
         }
         this->state_ = STATE_INIT;
@@ -687,6 +689,26 @@ void Sim900Component::set_etat_module_(int state_val) {
   } else {
     ESP_LOGD(TAG, "Etat du module: %s", modem_status.c_str());
   }
+}
+
+void Sim900Component::rise_incoming_call_event(const std::string caller) 
+{
+  std::map<std::string, std::string> event_data;
+  std::string lbl_caller = "caller";
+  event_data.insert(std::make_pair(lbl_caller, caller));
+  fire_homeassistant_event("esphome.incoming_call_event", event_data);
+  ESP_LOGI(TAG, "rise_incoming_call_event : caller = %s", caller.c_str());
+}
+
+void Sim900Component::rise_sms_event(const std::string sender, const std::string message) 
+{
+  std::map<std::string, std::string> event_data;
+  std::string lbl_sender = "sender";
+  std::string lbl_message = "message";
+  event_data.insert(std::make_pair(lbl_sender, sender));
+  event_data.insert(std::make_pair(lbl_message, message));
+  fire_homeassistant_event("esphome.received_sms_event", event_data);
+  ESP_LOGI(TAG, "rise_sms_event : sender = %s, message = '%s'", sender.c_str(), message.c_str());
 }
 
 }  // namespace sim900
