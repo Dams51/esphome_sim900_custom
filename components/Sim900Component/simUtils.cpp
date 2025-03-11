@@ -8,7 +8,7 @@ namespace esphome {
 
         static const char *const TAG = "GsmUtils";
 
-        static std::string GsmUtils::Decode_GSM7bit_PDU_Payload(std::string payload, int sms_text_length) {
+        std::string GsmUtils::Decode_GSM7bit_PDU_Payload(std::string payload, int sms_text_length) {
             std::string output = "";
             int payload_pos = 0;
             int buffer_sms_length = payload.length() / 2;
@@ -30,7 +30,7 @@ namespace esphome {
                 }
             
                 char_val = BITMASK_7BITS & buffer_1;
-                output.append(this->Decode_GSM_Char(char_val));
+                output.append(Decode_GSM_Char(char_val));
                 output_text_length++;
             }
             int carry_on_bits = 1;
@@ -38,7 +38,7 @@ namespace esphome {
         
             for (; i < buffer_sms_length; ++i) {
                 char_val = BITMASK_7BITS &	((buffer_2 << carry_on_bits) | (buffer_1 >> (8 - carry_on_bits)));
-                output.append(this->Decode_GSM_Char(char_val));
+                output.append(Decode_GSM_Char(char_val));
                 output_text_length++;
             
                 if (output_text_length == sms_text_length) break;
@@ -48,7 +48,7 @@ namespace esphome {
                 if (carry_on_bits == 8) {
                     carry_on_bits = 1;
                     char_val = buffer_2 & BITMASK_7BITS;
-                    output.append(this->Decode_GSM_Char(char_val));
+                    output.append(Decode_GSM_Char(char_val));
                     output_text_length++;
                     if (output_text_length == sms_text_length) break;
                 }
@@ -63,7 +63,7 @@ namespace esphome {
             
             if (output_text_length < sms_text_length) { // Add last remainder.
                 char_val = buffer_1 >> (8 - carry_on_bits);
-                output.append(this->Decode_GSM_Char(char_val));
+                output.append(Decode_GSM_Char(char_val));
                 output_text_length++;
             }
         
@@ -71,7 +71,7 @@ namespace esphome {
             return output;
         }
 
-        static std::string GsmUtils::Decode_GSM_Char(int char_code) {
+        std::string GsmUtils::Decode_GSM_Char(int char_code) {
             static bool next_char_is_extension = false;
             if (char_code == 27)
             {
@@ -82,17 +82,17 @@ namespace esphome {
                 if (next_char_is_extension)
                 {
                     next_char_is_extension = false;
-                    return this->GSM7bits_Extension_Char(char_code);
+                    return GSM7bits_Extension_Char(char_code);
                 }
                 else
                 {
-                    return this->GSM7bits_Char(char_code);
+                    return GSM7bits_Char(char_code);
                 }
             }
             return "";
         }
         
-        static std::string GsmUtils::GSM7bits_Char(int char_code) {
+        std::string GsmUtils::GSM7bits_Char(int char_code) {
             // Standard GSM7bits
             switch(char_code) {
                 case 0:
@@ -485,7 +485,7 @@ namespace esphome {
             return "?";
         }
         
-        static std::string GsmUtils::GSM7bits_Extension_Char(int char_code) {
+        std::string GsmUtils::GSM7bits_Extension_Char(int char_code) {
             // Basic GSM7 Character Set Extension
             switch(char_code) {
                 // case 10:
@@ -530,7 +530,7 @@ namespace esphome {
             return "?";
         }
         
-        static std::string GsmUtils::Extended_ASCII_Char(int char_code) {
+        std::string GsmUtils::Extended_ASCII_Char(int char_code) {
             // ASCII Extended from char(160) to char(255)
             switch(char_code) {
                 case 160:

@@ -403,14 +403,14 @@ void Sim900Component::parse_cmd_(std::string message) {
             {
               // Extended ASCII
               // ESP_LOGV(TAG, "PDU - char_code = %i", char_code);
-              output_sms_string.append(GsmUtils::Extended_ASCII_Char(char_code));
+              output_sms_string.append(simUtils::GsmUtils::Extended_ASCII_Char(char_code));
             }
           }
         }
         else
         {
           ESP_LOGV(TAG, "PDU - 7 bits message");
-          output_sms_string = GsmUtils::Decode_GSM7bit_PDU_Payload(payload, data_length);
+          output_sms_string = simUtils::GsmUtils::Decode_GSM7bit_PDU_Payload(payload, data_length);
         }
         this->message_ = output_sms_string;
       }
