@@ -15,7 +15,7 @@
 #include "esphome/components/gpio/switch/gpio_switch.h"
 #include "esphome/components/uart/uart.h"
 #include "esphome/core/automation.h"
-#include "pdulib.h"
+// #include "pdulib.h"
 
 namespace esphome {
 namespace sim900 {
