@@ -14,6 +14,7 @@
 #include "esphome/components/switch/switch.h"
 #include "esphome/components/gpio/switch/gpio_switch.h"
 #include "esphome/components/uart/uart.h"
+#include "esphome/components/api/user_services.h"
 #include "esphome/components/api/custom_api_device.h"
 #include "esphome/core/automation.h"
 #include "pdulib.h"
