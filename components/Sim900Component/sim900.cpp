@@ -13,10 +13,10 @@ const char ASCII_LF = 0x0A;
 const char ASCII_CTRL_Z = 0x1A;
 
 void Sim900Component::setup() {
-  register_service(dial, "makeCall", {"recipient"});
-  register_service(connect, "answerCall");
-  register_service(disconnect, "terminateCall");
-  register_service(send_sms, "send_sms", {"recipient", "message"});
+  register_service(&sim900::Sim900Component::dial, "makeCall", {"recipient"});
+  register_service(&sim900::Sim900Component::connect, "answerCall");
+  register_service(&sim900::Sim900Component::disconnect, "terminateCall");
+  register_service(&sim900::Sim900Component::send_sms, "send_sms", {"recipient", "message"});
 }
 
 void Sim900Component::update() {
