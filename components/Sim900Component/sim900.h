@@ -61,6 +61,7 @@ enum State {
 class Sim900Component : public uart::UARTDevice, public api::CustomAPIDevice, public PollingComponent {
  public:
   /// Retrieve the latest sensor values. This operation takes approximately 16ms.
+  void setup() override;
   void update() override;
   void loop() override;
   void dump_config() override;
