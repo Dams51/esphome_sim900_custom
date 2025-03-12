@@ -19,6 +19,7 @@ void Sim900Component::update() {
   if (this->watch_dog_++ == 2) {
     ESP_LOGD(TAG, "WatchDog - %d", this->state_);
     this->state_ = STATE_INIT;
+    this->expect_ack_ = false;
     this->write(26);
   }
 
@@ -36,8 +37,8 @@ void Sim900Component::update() {
       this->state_ = STATE_SENDING_SMS_1;
       return; // '>' expected, not ACK
     } else if (this->registered_ && this->dial_pending_) {
-      this->send_cmd_("AT+CSCS=\"GSM\"");
-      this->state_ = STATE_DIALING1;
+      this->send_cmd_("ATD" + this->recipient_ + ';');
+      this->state_ = STATE_DIALING;
     } else if (this->registered_ && this->connect_pending_) {
       this->connect_pending_ = false;
       ESP_LOGI(TAG, "Connecting...");
@@ -114,7 +115,7 @@ void Sim900Component::parse_cmd_(std::string message) {
       }
     }
   } else if (ok && (this->state_ != STATE_PARSE_SMS_RESPONSE && this->state_ != STATE_CHECK_CALL &&
-                    this->state_ != STATE_RECEIVE_SMS && this->state_ != STATE_DIALING2)) {
+                    this->state_ != STATE_RECEIVE_SMS && this->state_ != STATE_DIALING)) {
     ESP_LOGW(TAG, "Received unexpected OK. Ignoring");
     return;
   }
@@ -446,11 +447,7 @@ void Sim900Component::parse_cmd_(std::string message) {
         this->expect_ack_ = true;
       }
       break;
-    case STATE_DIALING1:
-      this->send_cmd_("ATD" + this->recipient_ + ';');
-      this->state_ = STATE_DIALING2;
-      break;
-    case STATE_DIALING2:
+    case STATE_DIALING:
       if (ok) {
         ESP_LOGI(TAG, "Dialing: '%s'", this->recipient_.c_str());
         this->dial_pending_ = false;
