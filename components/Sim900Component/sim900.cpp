@@ -17,6 +17,7 @@ const char ASCII_CTRL_Z = 0x1A;
 
 void Sim900Component::update() {
   if (this->watch_dog_++ == 2) {
+    ESP_LOGD(TAG, "WatchDog - %d", this->state_);
     this->state_ = STATE_INIT;
     this->write(26);
   }
@@ -560,7 +561,7 @@ void Sim900Component::loop() {
       byte = '?';  // need to be valid utf8 string for log functions.
     this->read_buffer_[this->read_pos_] = byte;
 
-    if (this->state_ == STATE_SENDING_SMS_2 && this->read_pos_ == 0 && byte == '>')
+    if (this->state_ == STATE_SENDING_SMS_1 && this->read_pos_ == 1 && byte == ' ' && this->read_buffer_[0] == '>')
       this->read_buffer_[++this->read_pos_] = ASCII_LF;
 
     if (this->read_buffer_[this->read_pos_] == ASCII_LF) {
