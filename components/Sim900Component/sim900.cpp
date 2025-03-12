@@ -663,12 +663,12 @@ void Sim900Component::set_rssi_(int rssi) {
   ESP_LOGD(TAG, "RSSI: signal = %i dBm", signal);
 #ifdef USE_SENSOR
   if (this->rssi_sensor_ != nullptr) {
-    this->rssi_sensor_->publish_state(rssi);
+    this->rssi_sensor_->publish_state(signal);
   } else {
-    ESP_LOGD(TAG, "RSSI: %d", rssi);
+    ESP_LOGD(TAG, "RSSI: %d", signal);
   }
 #else
-  ESP_LOGD(TAG, "RSSI: %d", rssi);
+  ESP_LOGD(TAG, "RSSI: %d", signal);
 #endif
 }
 void Sim900Component::set_etat_module_(int state_val) {
