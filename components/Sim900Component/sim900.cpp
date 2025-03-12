@@ -32,6 +32,7 @@ void Sim900Component::update() {
       this->write_str(cmd.c_str());
       this->write_byte(ASCII_CR);
       this->state_ = STATE_SENDING_SMS_1;
+      return; // '>' expected, not ACK
     } else if (this->registered_ && this->dial_pending_) {
       this->send_cmd_("AT+CSCS=\"GSM\"");
       this->state_ = STATE_DIALING1;
