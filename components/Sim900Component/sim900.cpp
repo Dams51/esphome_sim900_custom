@@ -2,6 +2,9 @@
 #include "simUtils.h"
 #include "esphome/core/log.h"
 #include <cstring>
+#include <iostream>
+#include <sstream>
+#include <vector>
 
 namespace esphome {
 namespace sim900 {
@@ -253,25 +256,39 @@ void Sim900Component::parse_cmd_(std::string message) {
       ESP_LOGV(TAG, "STATE_PARSE_SMS_RESPONSE");
       if (message.compare(0, 6, "+CMGL:") == 0 && this->parse_index_ == 0) {
         ESP_LOGV(TAG, "R: +CMGL");
-        size_t start = 7;
-        size_t end = message.find(',', start);
-        uint8_t item = 0;
-        while (end != std::string::npos) {
-          item++;
-          ESP_LOGV(TAG, "LOOP : item = %d, start = %d, end = %d", item, start, end);
-          if (item == 1) {  // Slot Index
-            this->parse_index_ = parse_number<uint8_t>(message.substr(start, end - start)).value_or(0);
-            ESP_LOGV(TAG, "Item1 : SMS index = %d", this->parse_index_);
-            break;
-          }
-          // item 2 = STATUS, usually 0 for "REC UNREAD"
-          // item 3 = ""
-          // item 4 = length of the actual TP data unit in octets
-          start = end + 1;
-          end = message.find(',', start);
+
+        // size_t start = 7;
+        // size_t end = message.find(',', start);
+        // uint8_t item = 0;
+        // while (end != std::string::npos) {
+        //   item++;
+        //   ESP_LOGV(TAG, "LOOP : item = %d, start = %d, end = %d", item, start, end);
+        //   if (item == 1) {  // Slot Index
+        //     this->parse_index_ = parse_number<uint8_t>(message.substr(start, end - start)).value_or(0);
+        //     ESP_LOGV(TAG, "Item1 : SMS index = %d", this->parse_index_);
+        //     break;
+        //   }
+        //   // item 2 = STATUS, usually 0 for "REC UNREAD"
+        //   // item 3 = ""
+        //   // item 4 = length of the actual TP data unit in octets
+        //   start = end + 1;
+        //   end = message.find(',', start);
+        // }
+
+        // if (item < 2) {
+
+        std::stringstream ss(message.substr(7)); // On enlève "+CMGL: "
+        std::vector<std::string> tokens;
+        std::string token;
+
+        while (std::getline(ss, token, ',')) {
+            tokens.push_back(token);
         }
 
-        if (item < 2) {
+        this->parse_index_ = parse_number<uint8_t>(tokens[0]).value_or(0);
+        ESP_LOGV(TAG, "SMS index = %d", this->parse_index_);
+
+        if (tokens.size() != 4) {
           ESP_LOGD(TAG, "Invalid message %d %s", this->state_, message.c_str());
           return;
         }
