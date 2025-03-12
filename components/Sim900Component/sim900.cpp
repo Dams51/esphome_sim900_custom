@@ -250,29 +250,34 @@ void Sim900Component::parse_cmd_(std::string message) {
       this->parse_index_ = 0;
       break;
     case STATE_PARSE_SMS_RESPONSE:
+      ESP_LOGV(TAG, "STATE_PARSE_SMS_RESPONSE");
       if (message.compare(0, 6, "+CMGL:") == 0 && this->parse_index_ == 0) {
-        size_t start = 7;
-        size_t end = message.find(',', start);
-        uint8_t item = 0;
-        while (end != start) {
-          item++;
-          if (item == 1) {  // Slot Index
-            this->parse_index_ = parse_number<uint8_t>(message.substr(start, end - start)).value_or(0);
-          }
-          // item 2 = STATUS, usually 0 for "REC UNREAD"
-          // item 3 = ""
-          // item 4 = length of the actual TP data unit in octets
-          start = end + 1;
-          end = message.find(',', start);
-        }
+        ESP_LOGV(TAG, "R: +CMGL");
+        // size_t start = 7;
+        // size_t end = message.find(',', start);
+        // uint8_t item = 0;
+        // while (end != start) {
+        //   item++;
+        //   if (item == 1) {  // Slot Index
+        //     this->parse_index_ = parse_number<uint8_t>(message.substr(start, end - start)).value_or(0);
+        //   }
+        //   // item 2 = STATUS, usually 0 for "REC UNREAD"
+        //   // item 3 = ""
+        //   // item 4 = length of the actual TP data unit in octets
+        //   start = end + 1;
+        //   end = message.find(',', start);
+        // }
 
-        if (item < 2) {
-          ESP_LOGD(TAG, "Invalid message %d %s", this->state_, message.c_str());
-          return;
-        }
-        this->sender_.clear();
-        this->message_.clear();
-        this->state_ = STATE_RECEIVE_SMS;
+        // if (item < 2) {
+        //   ESP_LOGD(TAG, "Invalid message %d %s", this->state_, message.c_str());
+        //   return;
+        // }
+        // this->sender_.clear();
+        // this->message_.clear();
+        // this->state_ = STATE_RECEIVE_SMS;
+
+        send_cmd_("AT+CLCC");
+        this->state_ = STATE_CHECK_CALL;
       }
       // Otherwise we receive another OK
       if (ok) {
