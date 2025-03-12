@@ -580,29 +580,33 @@ void Sim900Component::loop() {
 }
 
 void Sim900Component::send_sms(const std::string &recipient, const std::string &message) {
-  ESP_LOGI(TAG, "Envoi SMS, Tel : '%s', SMS : '%s'", recipient.c_str(), message.c_str());
-  this->pdu_length_ = 0;
-  this->pdu_length_ = this->pdu_object_.encodePDU(recipient.c_str(), message.c_str());
-  if (this->pdu_length_ > 0) {
-    this->send_pending_ = true;
+  if (this->send_pending_){
+    ESP_LOGW(TAG, "send_sms(), Impossible d'envoyer le SMS, un autre envoi est déjà en attente");
   } else {
-    switch(this->pdu_length_) {
-      case this->pdu_object_.UCS2_TOO_LONG:
-      case this->pdu_object_.GSM7_TOO_LONG:
-          ESP_LOGE(TAG, "Envoi SMS - Message too long to send as a single message, change to multipart");
-          break;
-        case this->pdu_object_.WORK_BUFFER_TOO_SMALL:
-          ESP_LOGE(TAG, "Envoi SMS - Work buffer too small, change PDU constructor");
-          break;
-        case this->pdu_object_.ADDRESS_FORMAT:
-          ESP_LOGE(TAG, "Envoi SMS - SCA or Target address illegal characters or too long");
-          break;
-        case this->pdu_object_.MULTIPART_NUMBERS:
-          ESP_LOGE(TAG, "Envoi SMS - Multipart numbers illogical");
-          break;
-        case this->pdu_object_.ALPHABET_8BIT_NOT_SUPPORTED:
-          ESP_LOGE(TAG, "Envoi SMS - 8 bit alphabert not supported");
-          break;
+    ESP_LOGI(TAG, "send_sms(), SMS en atente d'envoi = Tel : '%s', SMS : '%s'", recipient.c_str(), message.c_str());
+    this->pdu_length_ = 0;
+    this->pdu_length_ = this->pdu_object_.encodePDU(recipient.c_str(), message.c_str());
+    if (this->pdu_length_ > 0) {
+      this->send_pending_ = true;
+    } else {
+      switch(this->pdu_length_) {
+        case this->pdu_object_.UCS2_TOO_LONG:
+        case this->pdu_object_.GSM7_TOO_LONG:
+            ESP_LOGE(TAG, "Envoi SMS - Message too long to send as a single message, change to multipart");
+            break;
+          case this->pdu_object_.WORK_BUFFER_TOO_SMALL:
+            ESP_LOGE(TAG, "Envoi SMS - Work buffer too small, change PDU constructor");
+            break;
+          case this->pdu_object_.ADDRESS_FORMAT:
+            ESP_LOGE(TAG, "Envoi SMS - SCA or Target address illegal characters or too long");
+            break;
+          case this->pdu_object_.MULTIPART_NUMBERS:
+            ESP_LOGE(TAG, "Envoi SMS - Multipart numbers illogical");
+            break;
+          case this->pdu_object_.ALPHABET_8BIT_NOT_SUPPORTED:
+            ESP_LOGE(TAG, "Envoi SMS - 8 bit alphabert not supported");
+            break;
+      }
     }
   }
 }
