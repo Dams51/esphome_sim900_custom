@@ -233,7 +233,7 @@ void Sim900Component::parse_cmd_(std::string message) {
       break;
     case STATE_CPAS: // Step 3.1
       send_cmd_("AT+CPAS");
-      this->state_ = STATE_CSQ_RESPONSE;
+      this->state_ = STATE_CPAS_RESPONSE;
       break;
     case STATE_CPAS_RESPONSE: // Step 3.2
       if (message.compare(0, 6, "+CPAS:") == 0) {
