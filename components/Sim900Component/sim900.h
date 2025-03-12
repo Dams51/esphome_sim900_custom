@@ -123,6 +123,7 @@ class Sim900Component : public uart::UARTDevice, public api::CustomAPIDevice, pu
   size_t read_pos_{0};
   uint8_t parse_index_{0};
   uint8_t watch_dog_{0};
+  bool module_setup_done_{false};
   bool expect_ack_{false};
   sim900::State state_{STATE_IDLE};
   bool registered_{false};

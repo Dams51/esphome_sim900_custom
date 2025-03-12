@@ -19,6 +19,7 @@ void Sim900Component::update() {
   if (this->watch_dog_++ == 2) {
     ESP_LOGD(TAG, "WatchDog - %d", this->state_);
     this->state_ = STATE_INIT;
+    this->module_setup_done_ = false;
     this->expect_ack_ = false;
     this->write(26);
   }
@@ -52,12 +53,18 @@ void Sim900Component::update() {
       ESP_LOGI(TAG, "Disconnecting...");
       this->send_cmd_("ATH");
     } else if (this->registered_ && this->call_state_ != 6) {
-      send_cmd_("AT+CLCC");
+      this->send_cmd_("AT+CLCC");
       this->state_ = STATE_CHECK_CALL;
       return;
     } else {
-      this->send_cmd_("AT");
-      this->state_ = STATE_SETUP_CMGF;
+      if (this->module_setup_done_) {
+        this->send_cmd_("AT+CREG?");
+        this->state_ = STATE_CREG_WAIT;
+        return;
+      } else {
+        this->send_cmd_("AT");
+        this->state_ = STATE_SETUP_CMGF;
+      }
     }
     this->expect_ack_ = true;
   } else if (state_ == STATE_RECEIVED_SMS) {
@@ -191,6 +198,7 @@ void Sim900Component::parse_cmd_(std::string message) {
     case STATE_SETUP_CNMI: // Step 6
       send_cmd_("AT+CNMI=2,1");
       this->state_ = STATE_CREG;
+      this->module_setup_done_ = true;
       this->expect_ack_ = true;
       break;
 
