@@ -28,7 +28,8 @@ void Sim900Component::update() {
     if (this->registered_ && this->send_pending_) {
       ESP_LOGD(TAG, "Envoi SMS - Taille PDU = %i", this->pdu_length_);
       std::string cmd = "AT+CMGS=" + std::to_string(this->pdu_length_);
-      ESP_LOGV(TAG, "S: %s", cmd.c_str());
+      ESP_LOGV(TAG, "S: %s - %d", cmd.c_str(), this->state_);
+      this->watch_dog_ = 0;
       this->write_str(cmd.c_str());
       this->write_byte(ASCII_CR);
       this->state_ = STATE_SENDING_SMS_1;
@@ -419,12 +420,13 @@ void Sim900Component::parse_cmd_(std::string message) {
       // Let the buffer flush. Next poll will request to delete the parsed index message.
       break;
     case STATE_SENDING_SMS_1:
-      if (message == ">") {
+      if (message == "> ") {
         const char * PDU = this->pdu_object_.getSMS();
         std::string str_PDU = PDU;
         str_PDU = str_PDU.substr(0, str_PDU.length() - 1);
         ESP_LOGD(TAG, "Envoi SMS - PDU = '%s'", str_PDU.c_str());
-        ESP_LOGV(TAG, "S: %s", str_PDU.c_str());
+        ESP_LOGV(TAG, "S: %s - %d", str_PDU.c_str(), this->state_);
+        this->watch_dog_ = 0;
         this->write_str(str_PDU.c_str());
         this->write_byte(ASCII_CTRL_Z);
         this->state_ = STATE_SENDING_SMS_2;
