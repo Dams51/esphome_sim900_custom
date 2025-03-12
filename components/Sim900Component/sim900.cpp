@@ -258,8 +258,10 @@ void Sim900Component::parse_cmd_(std::string message) {
         uint8_t item = 0;
         while (end != start) {
           item++;
+          ESP_LOGV(TAG, "LOOP : item = %d", item);
           if (item == 1) {  // Slot Index
             this->parse_index_ = parse_number<uint8_t>(message.substr(start, end - start)).value_or(0);
+            ESP_LOGV(TAG, "Item1 : SMS index = %d", this->parse_index_);
           }
           // item 2 = STATUS, usually 0 for "REC UNREAD"
           // item 3 = ""
@@ -274,7 +276,10 @@ void Sim900Component::parse_cmd_(std::string message) {
         }
         this->sender_.clear();
         this->message_.clear();
-        this->state_ = STATE_RECEIVE_SMS;
+        // this->state_ = STATE_RECEIVE_SMS;
+
+        send_cmd_("AT+CLCC");
+        this->state_ = STATE_CHECK_CALL;
       }
       // Otherwise we receive another OK
       if (ok) {
@@ -419,7 +424,7 @@ void Sim900Component::parse_cmd_(std::string message) {
         // }
         // this->message_ = output_sms_string;
 
-        
+
         send_cmd_("AT+CLCC");
         this->state_ = STATE_CHECK_CALL;
       }
