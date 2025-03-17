@@ -21,7 +21,7 @@ void Sim900Component::update() {
     this->state_ = STATE_INIT;
     this->module_setup_done_ = false;
     this->expect_ack_ = false;
-    this->write(26);
+    this->write_byte(ASCII_CTRL_Z);
   }
 
   if (this->expect_ack_)
@@ -444,7 +444,7 @@ void Sim900Component::parse_cmd_(std::string message) {
         set_registered_(false);
         this->state_ = STATE_INIT;
         this->send_cmd_("AT+CMEE=2");
-        this->write(26);
+        this->write_byte(ASCII_CTRL_Z);
       }
       break;
     case STATE_SENDING_SMS_2:
@@ -462,7 +462,7 @@ void Sim900Component::parse_cmd_(std::string message) {
       } else {
         this->set_registered_(false);
         this->send_cmd_("AT+CMEE=2");
-        this->write(26);
+        this->write_byte(ASCII_CTRL_Z);
       }
       this->state_ = STATE_INIT;
       break;
@@ -524,7 +524,7 @@ void Sim900Component::parse_cmd_(std::string message) {
     //   //   this->set_registered_(false);
     //   //   this->state_ = STATE_INIT;
     //   //   this->send_cmd_("AT+CMEE=2");
-    //   //   this->write(26);
+    //   //   this->write_byte(ASCII_CTRL_Z);
     //   // }
     //   break;
     // case STATE_CHECK_USSD:
