@@ -97,15 +97,18 @@ void Sim900Component::parse_cmd_(std::string message) {
       // Incoming call...
       this->state_ = STATE_PARSE_CLIP;
       this->expect_ack_ = false;
+      this->watch_dog_ = 0;
     } else if (message == "NO CARRIER") {
       if (this->call_state_ != 6) {
         this->call_state_ = 6;
         // this->call_disconnected_callback_.call();
       }
+      this->watch_dog_ = 0;
       return; // Next message
     } else if (message.compare(0, 6, "+CMTI:") == 0) {
-      ESP_LOGI(TAG, "TODO : Handle +CMTI");
-      // this->state_ = STATE_CHECK_SMS;
+      ESP_LOGI(TAG, "Recived +CMTI, checking SMS");
+      this->state_ = STATE_CHECK_SMS;
+      this->watch_dog_ = 0;
     } else if (message == "ERROR") {
       ESP_LOGE(TAG, "Command error");
     // } else if (message.compare(0, 6, "+CUSD:") == 0) {
