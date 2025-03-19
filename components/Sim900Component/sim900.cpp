@@ -93,7 +93,7 @@ void Sim900Component::parse_cmd_(std::string message) {
   ESP_LOGV(TAG, "R: %s - %d", message.c_str(), this->state_);
 
   if (this->state_ != STATE_RECEIVE_SMS) {
-    if (message == "RING") {
+    if (message == "RING" || message.compare(0, 6, "+CLIP:") == 0) {
       // Incoming call...
       this->state_ = STATE_PARSE_CLIP;
       this->expect_ack_ = false;
@@ -102,8 +102,15 @@ void Sim900Component::parse_cmd_(std::string message) {
         this->call_state_ = 6;
         // this->call_disconnected_callback_.call();
       }
+      return; // Next message
+    } else if (message.compare(0, 6, "+CMTI:") == 0) {
+      ESP_LOGI(TAG, "TODO : Handle +CMTI");
+      // this->state_ = STATE_CHECK_SMS;
     } else if (message == "ERROR") {
       ESP_LOGE(TAG, "Command error");
+    // } else if (message.compare(0, 6, "+CUSD:") == 0) {
+    //   // Incoming USSD MESSAGE
+    //   this->state_ = STATE_CHECK_USSD;
     }
   }
 
@@ -118,6 +125,7 @@ void Sim900Component::parse_cmd_(std::string message) {
       } else {
         ESP_LOGW(TAG, "Not ack. %d %s", this->state_, message.c_str());
         this->state_ = STATE_IDLE;  // Let it timeout
+        ESP_LOGI(TAG, "IDLE State, waiting for timeout - %d", this->state_);
         return;
       }
     }
@@ -128,32 +136,12 @@ void Sim900Component::parse_cmd_(std::string message) {
   }
 
   switch (this->state_) {
-    case STATE_INIT: {
-      // While we were waiting for update to check for messages, this notifies a message
-      // is available.
-      bool message_available = message.compare(0, 6, "+CMTI:") == 0;
-      if (!message_available) {
-        if (message == "RING") {
-          // Incoming call...
-          this->state_ = STATE_PARSE_CLIP;
-        } else if (message == "NO CARRIER") {
-          if (this->call_state_ != 6) {
-            this->call_state_ = 6;
-            // this->call_disconnected_callback_.call();
-          }
-        // } else if (message.compare(0, 6, "+CUSD:") == 0) {
-        //   // Incoming USSD MESSAGE
-        //   this->state_ = STATE_CHECK_USSD;
-        }
-        break;
-      }
-
-      // Else fall thru STATE_CHECK_SMS same
+    case STATE_INIT:
+      // Fall thru STATE_CHECK_SMS same
       send_cmd_("AT+CMGL=0,1");
       this->state_ = STATE_PARSE_SMS_RESPONSE;
       this->parse_index_ = 0;
       break;
-    }
 
   // SETUP
     case STATE_DISABLE_ECHO: // Step 0
