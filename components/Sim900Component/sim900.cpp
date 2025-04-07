@@ -628,7 +628,10 @@ void Sim900Component::dial(const std::string &recipient) {
   this->dial_pending_ = true;
 }
 void Sim900Component::connect() { this->connect_pending_ = true; }
-void Sim900Component::disconnect() { this->disconnect_pending_ = true; }
+void Sim900Component::disconnect() { 
+  this->disconnect_pending_ = true; 
+  ESP_LOGI(TAG, "disconnect_pending_ = true");
+}
 
 void Sim900Component::set_registered_(bool registered) {
   this->registered_ = registered;
