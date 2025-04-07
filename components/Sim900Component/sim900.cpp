@@ -140,6 +140,10 @@ void Sim900Component::parse_cmd_(std::string message) {
 
   switch (this->state_) {
     case STATE_INIT:
+      if (this->registered_ && (this->send_pending_ || this->dial_pending_ || this->connect_pending_ || this->disconnect_pending_)) {
+        this->update();
+        return;
+      }
       // Fall thru STATE_CHECK_SMS same
       send_cmd_("AT+CMGL=0,1");
       this->state_ = STATE_PARSE_SMS_RESPONSE;
