@@ -18,10 +18,17 @@ const char ASCII_CTRL_Z = 0x1A;
 void Sim900Component::update() {
   if (this->watch_dog_++ == 2) {
     ESP_LOGD(TAG, "WatchDog - %d", this->state_);
-    this->state_ = STATE_INIT;
-    this->module_setup_done_ = false;
-    this->expect_ack_ = false;
-    this->write_byte(ASCII_CTRL_Z);
+    if (this->state_ == STATE_SETUP_CMGF && this->power_key_switch_ != nullptr) {
+      ESP_LOGI(TAG, "Module may be off");
+      toggle_power_switch();
+    }
+    else
+    {
+      this->state_ = STATE_INIT;
+      this->module_setup_done_ = false;
+      this->expect_ack_ = false;
+      this->write_byte(ASCII_CTRL_Z);
+    }
   }
 
   if (this->expect_ack_)
@@ -635,10 +642,7 @@ void Sim900Component::dial(const std::string &recipient) {
   this->dial_pending_ = true;
 }
 void Sim900Component::connect() { this->connect_pending_ = true; }
-void Sim900Component::disconnect() { 
-  this->disconnect_pending_ = true; 
-  ESP_LOGI(TAG, "disconnect_pending_ = true");
-}
+void Sim900Component::disconnect() { this->disconnect_pending_ = true; }
 
 void Sim900Component::set_registered_(bool registered) {
   this->registered_ = registered;
@@ -720,6 +724,16 @@ void Sim900Component::rise_sms_event(const std::string sender, const std::string
   event_data.insert(std::make_pair(lbl_message, message));
   fire_homeassistant_event("esphome.received_sms_event", event_data);
   ESP_LOGI(TAG, "rise_sms_event : sender = %s, message = '%s'", sender.c_str(), message.c_str());
+}
+
+void Sim900Component::toggle_power_switch() {
+  if (this->power_key_switch_ != nullptr) {
+    this->power_key_switch_->turn_on();
+    delay(10);
+    this->power_key_switch_->turn_off();
+  } else {
+    ESP_LOGW(TAG, "toggle_power_switch() : Aucun bouton power");
+  }
 }
 
 }  // namespace sim900
