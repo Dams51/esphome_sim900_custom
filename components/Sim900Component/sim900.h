@@ -103,6 +103,7 @@ class Sim900Component : public uart::UARTDevice, public api::CustomAPIDevice, pu
   void set_etat_module_(int state_val);
   void rise_incoming_call_event(const std::string caller);
   void rise_sms_event(const std::string sender, const std::string message);
+  void toggle_power_switch();
 
 #ifdef USE_BINARY_SENSOR
   binary_sensor::BinarySensor *registered_binary_sensor_{nullptr};
