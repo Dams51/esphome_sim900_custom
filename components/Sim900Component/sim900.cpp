@@ -22,13 +22,10 @@ void Sim900Component::update() {
       ESP_LOGI(TAG, "Module may be off");
       toggle_power_switch();
     }
-    else
-    {
-      this->state_ = STATE_INIT;
-      this->module_setup_done_ = false;
-      this->expect_ack_ = false;
-      this->write_byte(ASCII_CTRL_Z);
-    }
+    this->state_ = STATE_INIT;
+    this->module_setup_done_ = false;
+    this->expect_ack_ = false;
+    this->write_byte(ASCII_CTRL_Z);
   }
 
   if (this->expect_ack_)
@@ -111,7 +108,7 @@ void Sim900Component::parse_cmd_(std::string message) {
         // this->call_disconnected_callback_.call();
       }
       if (this->state_ == STATE_ATA_SENT) {
-        this->state_ == STATE_INIT;
+        this->state_ = STATE_INIT;
       }
       this->watch_dog_ = 0;
       return; // Next message
@@ -729,7 +726,7 @@ void Sim900Component::rise_sms_event(const std::string sender, const std::string
 void Sim900Component::toggle_power_switch() {
   if (this->power_key_switch_ != nullptr) {
     this->power_key_switch_->turn_on();
-    delay(10);
+    delay(10); // TODO : Gérer le délais avec des status et le rallonger
     this->power_key_switch_->turn_off();
   } else {
     ESP_LOGW(TAG, "toggle_power_switch() : Aucun bouton power");
