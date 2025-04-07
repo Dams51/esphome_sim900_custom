@@ -104,7 +104,7 @@ void Sim900Component::parse_cmd_(std::string message) {
         // this->call_disconnected_callback_.call();
       }
       if (this->state_ == STATE_ATA_SENT) {
-        this->state_ == STATE_INIT
+        this->state_ == STATE_INIT;
       }
       this->watch_dog_ = 0;
       return; // Next message
