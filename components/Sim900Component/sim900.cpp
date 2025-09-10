@@ -726,8 +726,10 @@ void Sim900Component::rise_sms_event(const std::string sender, const std::string
 void Sim900Component::toggle_power_switch() {
   if (this->power_key_switch_ != nullptr) {
     this->power_key_switch_->turn_on();
-    delay(10); // TODO : Gérer le délais avec des status et le rallonger
-    this->power_key_switch_->turn_off();
+    // 1s delay
+    App.scheduler.set_timeout(1000, [this]() {
+      this->power_key_switch_->turn_off();
+    });
   } else {
     ESP_LOGW(TAG, "toggle_power_switch() : Aucun bouton power");
   }
