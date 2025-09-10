@@ -1,7 +1,6 @@
 #include "sim900.h"
 #include "simUtils.h"
 #include "esphome/core/log.h"
-#include "esphome/core/scheduler.h"
 #include <cstring>
 #include <iostream>
 #include <sstream>
@@ -728,7 +727,7 @@ void Sim900Component::toggle_power_switch() {
   if (this->power_key_switch_ != nullptr) {
     this->power_key_switch_->turn_on();
     // 1s delay
-    App.scheduler.set_timeout(1000, [this]() {
+    this->set_timeout(1000, [this]() {
       this->power_key_switch_->turn_off();
     });
   } else {
