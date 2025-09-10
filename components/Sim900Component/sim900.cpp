@@ -1,7 +1,7 @@
 #include "sim900.h"
 #include "simUtils.h"
 #include "esphome/core/log.h"
-#include "esphome.h"
+#include "esphome/core/scheduler.h"
 #include <cstring>
 #include <iostream>
 #include <sstream>
