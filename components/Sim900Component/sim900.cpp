@@ -1,6 +1,7 @@
 #include "sim900.h"
 #include "simUtils.h"
 #include "esphome/core/log.h"
+#include "esphome.h"
 #include <cstring>
 #include <iostream>
 #include <sstream>
