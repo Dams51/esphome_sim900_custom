@@ -47,6 +47,7 @@ Sim900SendSmsAction = sim900_ns.class_("Sim900SendSmsAction", automation.Action)
 Sim900DialAction = sim900_ns.class_("Sim900DialAction", automation.Action)
 Sim900ConnectAction = sim900_ns.class_("Sim900ConnectAction", automation.Action)
 Sim900DisconnectAction = sim900_ns.class_("Sim900DisconnectAction", automation.Action)
+Sim900TogglePowerSwitchAction = sim900_ns.class_("Sim900TogglePowerSwitchAction", automation.Action)
 
 CONF_SIM900_ID = "sim900_id"
 # CONF_ON_SMS_RECEIVED = "on_sms_received"
@@ -212,6 +213,18 @@ async def sim900_connect_to_code(config, action_id, template_arg, args):
     cv.Schema({cv.GenerateID(): cv.use_id(Sim900Component)}),
 )
 async def sim900_disconnect_to_code(config, action_id, template_arg, args):
+    paren = await cg.get_variable(config[CONF_ID])
+    var = cg.new_Pvariable(action_id, template_arg, paren)
+    return var
+
+
+
+@automation.register_action(
+    "sim900.togglepowerswitch",
+    Sim900TogglePowerSwitchAction,
+    cv.Schema({cv.GenerateID(): cv.use_id(Sim900Component)}),
+)
+async def sim900_togglepowerswitch_to_code(config, action_id, template_arg, args):
     paren = await cg.get_variable(config[CONF_ID])
     var = cg.new_Pvariable(action_id, template_arg, paren)
     return var

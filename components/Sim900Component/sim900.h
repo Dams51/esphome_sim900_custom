@@ -244,5 +244,15 @@ template<typename... Ts> class Sim900DisconnectAction : public Action<Ts...> {
  Sim900Component *parent_;
 };
 
+template<typename... Ts> class Sim900TogglePowerSwitchAction : public Action<Ts...> {
+ public:
+  Sim900TogglePowerSwitchAction(Sim900Component *parent) : parent_(parent) {}
+
+  void play(Ts... x) { this->parent_->toggle_power_switch(); }
+
+ protected:
+ Sim900Component *parent_;
+};
+
 }  // namespace sim900
 }  // namespace esphome
