@@ -729,7 +729,7 @@ void Sim900Component::set_call_state_(int state_val) {
     default:
       call_status = "Unknown";
   }
-  this->call_state_ = call_status;
+  this->call_state_ = state_val;
   if (this->call_state_text_sensor_ != nullptr) {
     this->call_state_text_sensor_->publish_state(call_status);
   } else {
