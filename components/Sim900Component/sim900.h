@@ -72,6 +72,7 @@ class Sim900Component : public uart::UARTDevice, public api::CustomAPIDevice, pu
   void set_rssi_sensor(sensor::Sensor *rssi_sensor) { rssi_sensor_ = rssi_sensor; }
 #endif
   void set_etat_module_text_sensor(text_sensor::TextSensor *etat_module_text_sensor) { etat_module_text_sensor_ = etat_module_text_sensor; }
+  void set_call_state_text_sensor(text_sensor::TextSensor *call_state_text_sensor) { call_state_text_sensor_ = call_state_text_sensor; }
   void set_power_key_switch(gpio::GPIOSwitch *power_key_switch) { power_key_switch_ = power_key_switch; }
 
   // void add_on_sms_received_callback(std::function<void(std::string, std::string)> callback) {
@@ -102,6 +103,7 @@ class Sim900Component : public uart::UARTDevice, public api::CustomAPIDevice, pu
   void set_registered_(bool registered);
   void set_rssi_(int rssi);
   void set_etat_module_(int state_val);
+  void set_call_state_(int state_val);
   void rise_incoming_call_event(const std::string caller);
   void rise_sms_event(const std::string sender, const std::string message);
 
@@ -114,6 +116,7 @@ class Sim900Component : public uart::UARTDevice, public api::CustomAPIDevice, pu
 #endif
 
   text_sensor::TextSensor *etat_module_text_sensor_{nullptr};
+  text_sensor::TextSensor *call_state_text_sensor_{nullptr};
   gpio::GPIOSwitch *power_key_switch_{nullptr};
 
   PDU pdu_object_ = PDU(512);

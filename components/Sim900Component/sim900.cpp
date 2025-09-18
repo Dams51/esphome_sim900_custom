@@ -104,8 +104,7 @@ void Sim900Component::parse_cmd_(std::string message) {
       this->watch_dog_ = 0;
     } else if (message == "NO CARRIER") {
       if (this->call_state_ != 6) {
-        this->call_state_ = 6;
-        // this->call_disconnected_callback_.call();
+        set_call_state_(6);
       }
       if (this->state_ == STATE_ATA_SENT) {
         this->state_ = STATE_INIT;
@@ -305,10 +304,8 @@ void Sim900Component::parse_cmd_(std::string message) {
             uint8_t current_call_state = parse_number<uint8_t>(message.substr(start, end - start)).value_or(6);
             if (current_call_state != this->call_state_) {
               ESP_LOGD(TAG, "Call state is now: %d", current_call_state);
-              // if (current_call_state == 0)
-              //   this->call_connected_callback_.call();
             }
-            this->call_state_ = current_call_state;
+            set_call_state_(current_call_state);
             break;
           }
           // item 4 = ""
@@ -324,8 +321,7 @@ void Sim900Component::parse_cmd_(std::string message) {
       } else if (ok) {
         if (this->call_state_ != 6) {
           // no call in progress
-          this->call_state_ = 6;  // Disconnect
-          // this->call_disconnected_callback_.call();
+          set_call_state_(6);  // Disconnect
         }
       }
       this->state_ = STATE_INIT;
@@ -487,10 +483,9 @@ void Sim900Component::parse_cmd_(std::string message) {
           end = message.find(',', start);
         }
         if (this->call_state_ != 4) {
-          this->call_state_ = 4;
+          set_call_state_(4);
           ESP_LOGI(TAG, "Incoming call from %s", caller_id.c_str());
           rise_incoming_call_event(caller_id);
-          // incoming_call_callback_.call(caller_id);
         }
         this->state_ = STATE_INIT;
       }
@@ -498,8 +493,7 @@ void Sim900Component::parse_cmd_(std::string message) {
     case STATE_ATA_SENT:
       ESP_LOGI(TAG, "Call connected");
       if (this->call_state_ != 0) {
-        this->call_state_ = 0;
-        // this->call_connected_callback_.call();
+        set_call_state_(0);
       }
       this->state_ = STATE_INIT;
       break;
@@ -633,6 +627,7 @@ void Sim900Component::dump_config() {
   LOG_SENSOR("  ", "Rssi", this->rssi_sensor_);
 #endif
   LOG_TEXT_SENSOR("  ", "Etat du module", this->etat_module_text_sensor_);
+  LOG_TEXT_SENSOR("  ", "Etat de l'appel", this->call_state_text_sensor_);
 }
 void Sim900Component::dial(const std::string &recipient) {
   this->recipient_ = recipient;
@@ -700,6 +695,44 @@ void Sim900Component::set_etat_module_(int state_val) {
     this->etat_module_text_sensor_->publish_state(modem_status);
   } else {
     ESP_LOGD(TAG, "Etat du module: %s", modem_status.c_str());
+  }
+}
+
+
+void Sim900Component::set_call_state_(int state_val) {
+    std::string call_status = "";
+    switch (state_val) {
+      case 0:
+        call_status = "Active";
+        // this->call_connected_callback_.call();
+        break;
+      case 1:
+        call_status = "Held";
+        break;
+      case 2:
+        call_status = "Dialing (Outgoing call)";
+        break;
+      case 3:
+        call_status = "Alerting (Outgoing call)";
+        break;
+      case 4:
+        call_status = "Incoming (Incoming call)";
+        // this->incoming_call_callback_.call(caller_id);
+        break;
+      case 5:
+        call_status = "Waiting (Incoming call)";
+        break;
+      case 6:
+        call_status = "Disconnect";
+        // this->call_disconnected_callback_.call();
+        break;
+      default:
+        call_status = "Unknown";
+    }
+  if (this->call_state_text_sensor_ != nullptr) {
+    this->call_state_text_sensor_->publish_state(call_status);
+  } else {
+    ESP_LOGD(TAG, "Etat de l'appel : %s", call_status.c_str());
   }
 }
 

@@ -37,6 +37,8 @@ text_sensor:
   - platform: Sim900Component
     etat_module:
       name: "Sim900 Etat du module"
+    etat_appel:
+      name: "Sim900 Etat de l'appel"
 
 switch:
   - platform: gpio
