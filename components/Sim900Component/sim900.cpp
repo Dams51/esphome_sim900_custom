@@ -56,7 +56,7 @@ void Sim900Component::update() {
       this->disconnect_pending_ = false;
       ESP_LOGI(TAG, "Disconnecting...");
       this->send_cmd_("ATH");
-    } else if (this->registered_ && this->call_state_ != 6) {
+    } else if (this->registered_ && this->call_state_ != 7) {
       this->send_cmd_("AT+CLCC");
       this->state_ = STATE_CHECK_CALL;
       return;
@@ -571,7 +571,7 @@ void Sim900Component::loop() {
     }
   }
   if (state_ == STATE_INIT && this->registered_ &&
-      (this->call_state_ != 6  // A call is in progress
+      (this->call_state_ < 6  // A call is in progress
        || this->send_pending_ || this->dial_pending_ || this->connect_pending_ || this->disconnect_pending_)) {
     this->update();
   }
