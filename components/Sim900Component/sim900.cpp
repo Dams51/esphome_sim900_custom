@@ -319,10 +319,7 @@ void Sim900Component::parse_cmd_(std::string message) {
           return;
         }
       } else if (ok) {
-        if (this->call_state_ != 6) {
-          // no call in progress
-          set_call_state_(6);  // Disconnect
-        }
+          set_call_state_(7);  // No call in progress
       }
       this->state_ = STATE_INIT;
       break;
@@ -700,35 +697,39 @@ void Sim900Component::set_etat_module_(int state_val) {
 
 
 void Sim900Component::set_call_state_(int state_val) {
-    std::string call_status = "";
-    switch (state_val) {
-      case 0:
-        call_status = "Active";
-        // this->call_connected_callback_.call();
-        break;
-      case 1:
-        call_status = "Held";
-        break;
-      case 2:
-        call_status = "Dialing (Outgoing call)";
-        break;
-      case 3:
-        call_status = "Alerting (Outgoing call)";
-        break;
-      case 4:
-        call_status = "Incoming (Incoming call)";
-        // this->incoming_call_callback_.call(caller_id);
-        break;
-      case 5:
-        call_status = "Waiting (Incoming call)";
-        break;
-      case 6:
-        call_status = "Disconnect";
-        // this->call_disconnected_callback_.call();
-        break;
-      default:
-        call_status = "Unknown";
-    }
+  std::string call_status = "";
+  switch (state_val) {
+    case 0:
+      call_status = "Active";
+      // this->call_connected_callback_.call();
+      break;
+    case 1:
+      call_status = "Held";
+      break;
+    case 2:
+      call_status = "Dialing (Outgoing call)";
+      break;
+    case 3:
+      call_status = "Alerting (Outgoing call)";
+      break;
+    case 4:
+      call_status = "Incoming (Incoming call)";
+      // this->incoming_call_callback_.call(caller_id);
+      break;
+    case 5:
+      call_status = "Waiting (Incoming call)";
+      break;
+    case 6:
+      call_status = "Disconnect";
+      // this->call_disconnected_callback_.call();
+      break;
+    case 7:
+      call_status = "No call in progress";
+      break;
+    default:
+      call_status = "Unknown";
+  }
+  this->call_state_ = call_status;
   if (this->call_state_text_sensor_ != nullptr) {
     this->call_state_text_sensor_->publish_state(call_status);
   } else {
