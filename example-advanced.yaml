@@ -39,6 +39,7 @@ text_sensor:
       name: "Sim900 Etat du module"
     etat_appel:
       name: "Sim900 Etat de l'appel"
+      id: sim900_etat_appel
 
 switch:
   - platform: gpio
@@ -52,6 +53,26 @@ button:
     on_press:
       - sim900.dial:
           recipient: "+33XXXXXXXXX"
+
+  - platform: template
+    name: Sim900 Appeler sans répondeur
+    icon: mdi:phone-outgoing
+    on_press:
+      - sim900.dial:
+          recipient: "+33XXXXXXXXX"
+      - wait_until:
+          text_sensor.state:
+            id: sim900_etat_appel
+            state: 'Alerting (Outgoing call)'
+      - delay: 19600ms
+      - if:
+          condition:
+            text_sensor.state:
+              id: sim900_etat_appel
+              state: 'Alerting (Outgoing call)'
+          then:
+            - logger.log: "Call still alerting => Disconnect"
+            - sim900.disconnect
 
   - platform: template
     name: Sim900 Répondre a l'appel
