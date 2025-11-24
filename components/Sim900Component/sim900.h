@@ -190,7 +190,7 @@ template<typename... Ts> class Sim900SendSmsAction : public Action<Ts...> {
   TEMPLATABLE_VALUE(std::string, recipient)
   TEMPLATABLE_VALUE(std::string, message)
 
-  void play(Ts... x) {
+  void play(const Ts&... x) {
     auto recipient = this->recipient_.value(x...);
     auto message = this->message_.value(x...);
     this->parent_->send_sms(recipient, message);
@@ -205,7 +205,7 @@ template<typename... Ts> class Sim900SendSmsAction : public Action<Ts...> {
 //   Sim900SendUssdAction(Sim900Component *parent) : parent_(parent) {}
 //   TEMPLATABLE_VALUE(std::string, ussd)
 
-//   void play(Ts... x) {
+//   void play(const Ts&... x) {
 //     auto ussd_code = this->ussd_.value(x...);
 //     this->parent_->send_ussd(ussd_code);
 //   }
@@ -219,7 +219,7 @@ template<typename... Ts> class Sim900DialAction : public Action<Ts...> {
   Sim900DialAction(Sim900Component *parent) : parent_(parent) {}
   TEMPLATABLE_VALUE(std::string, recipient)
 
-  void play(Ts... x) {
+  void play(const Ts&... x) {
     auto recipient = this->recipient_.value(x...);
     this->parent_->dial(recipient);
   }
@@ -231,7 +231,7 @@ template<typename... Ts> class Sim900ConnectAction : public Action<Ts...> {
  public:
   Sim900ConnectAction(Sim900Component *parent) : parent_(parent) {}
 
-  void play(Ts... x) { this->parent_->connect(); }
+  void play(const Ts&... x) { this->parent_->connect(); }
 
  protected:
  Sim900Component *parent_;
@@ -241,7 +241,7 @@ template<typename... Ts> class Sim900DisconnectAction : public Action<Ts...> {
  public:
   Sim900DisconnectAction(Sim900Component *parent) : parent_(parent) {}
 
-  void play(Ts... x) { this->parent_->disconnect(); }
+  void play(const Ts&... x) { this->parent_->disconnect(); }
 
  protected:
  Sim900Component *parent_;
@@ -251,7 +251,7 @@ template<typename... Ts> class Sim900TogglePowerSwitchAction : public Action<Ts.
  public:
   Sim900TogglePowerSwitchAction(Sim900Component *parent) : parent_(parent) {}
 
-  void play(Ts... x) { this->parent_->toggle_power_switch(); }
+  void play(const Ts&... x) { this->parent_->toggle_power_switch(); }
 
  protected:
  Sim900Component *parent_;
